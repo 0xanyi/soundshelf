@@ -5,7 +5,7 @@ const sessionCookieNames = [
   "__Secure-better-auth.session_token",
 ];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-admin-pathname", pathname);

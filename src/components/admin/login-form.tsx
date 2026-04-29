@@ -17,22 +17,30 @@ export function LoginForm() {
     event.preventDefault();
     setErrorMessage(null);
     setIsSubmitting(true);
+    let didNavigate = false;
 
-    const { error } = await authClient.signIn.email({
-      email,
-      password,
-      callbackURL: "/admin",
-    });
+    try {
+      const { error } = await authClient.signIn.email({
+        email,
+        password,
+        callbackURL: "/admin",
+      });
 
-    setIsSubmitting(false);
+      if (error) {
+        setErrorMessage(error.message ?? "Unable to sign in.");
+        return;
+      }
 
-    if (error) {
-      setErrorMessage(error.message ?? "Unable to sign in.");
-      return;
+      didNavigate = true;
+      router.push("/admin" as Route);
+      router.refresh();
+    } catch {
+      setErrorMessage("Unable to sign in. Please try again.");
+    } finally {
+      if (!didNavigate) {
+        setIsSubmitting(false);
+      }
     }
-
-    router.push("/admin" as Route);
-    router.refresh();
   }
 
   return (
