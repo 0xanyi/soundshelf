@@ -15,6 +15,10 @@ export function getNextTrackIndex({
     return null;
   }
 
+  if (currentIndex < 0 || currentIndex >= trackCount) {
+    return null;
+  }
+
   if (repeatMode === "track") {
     return currentIndex;
   }

@@ -43,6 +43,26 @@ describe("getNextTrackIndex", () => {
     ).toBe(2);
   });
 
+  it("returns null for repeat track when the current index is negative", () => {
+    expect(
+      getNextTrackIndex({
+        currentIndex: -1,
+        trackCount: 3,
+        repeatMode: "track",
+      }),
+    ).toBeNull();
+  });
+
+  it("returns null for repeat track when the current index is outside the playlist", () => {
+    expect(
+      getNextTrackIndex({
+        currentIndex: 3,
+        trackCount: 3,
+        repeatMode: "track",
+      }),
+    ).toBeNull();
+  });
+
   it("returns null for an empty playlist", () => {
     expect(
       getNextTrackIndex({

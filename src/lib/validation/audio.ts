@@ -26,7 +26,7 @@ export type AudioValidationResult =
     }
   | {
       valid: false;
-      reason: "unsupported_type" | "file_too_large";
+      reason: "unsupported_type" | "file_too_large" | "invalid_size";
       message: string;
     };
 
@@ -42,6 +42,14 @@ export function validateAudioFileMetadata(
       valid: false,
       reason: "unsupported_type",
       message: getUnsupportedTypeMessage(file.type),
+    };
+  }
+
+  if (!Number.isFinite(file.size) || file.size < 0) {
+    return {
+      valid: false,
+      reason: "invalid_size",
+      message: "Audio file size must be a finite non-negative number.",
     };
   }
 

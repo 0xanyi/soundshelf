@@ -45,4 +45,35 @@ describe("validateAudioFileMetadata", () => {
       message: `Audio files must be ${getMaxAudioUploadBytes()} bytes or smaller.`,
     });
   });
+
+  it("rejects negative file sizes", () => {
+    expect(
+      validateAudioFileMetadata({
+        type: "audio/mpeg",
+        size: -1,
+        name: "invalid.mp3",
+      }),
+    ).toEqual({
+      valid: false,
+      reason: "invalid_size",
+      message: "Audio file size must be a finite non-negative number.",
+    });
+  });
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    "rejects non-finite file sizes: %s",
+    (size) => {
+      expect(
+        validateAudioFileMetadata({
+          type: "audio/mpeg",
+          size,
+          name: "invalid.mp3",
+        }),
+      ).toEqual({
+        valid: false,
+        reason: "invalid_size",
+        message: "Audio file size must be a finite non-negative number.",
+      });
+    },
+  );
 });
