@@ -79,6 +79,7 @@ export function PlaylistBrowser() {
     const controller = new AbortController();
 
     async function loadPlaylist() {
+      setSelectedPlaylist(null);
       setDetailState("loading");
       setDetailError(null);
 
