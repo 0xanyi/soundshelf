@@ -32,11 +32,16 @@ Prayer Tunes is a Next.js app for publishing and playing curated prayer tune pla
    npm run dev
    ```
 
-5. Seed data when a seed implementation is available:
+5. Seed the first admin account when needed:
 
    ```bash
+   ADMIN_EMAIL=admin@example.com \
+   ADMIN_PASSWORD='replace-with-a-strong-admin-password' \
+   ADMIN_NAME='Prayer Tunes Admin' \
    npm run db:seed
    ```
+
+   The seed is idempotent. It creates or updates the configured user and creates a Better Auth credential account only when one does not already exist.
 
 ## Docker
 
@@ -65,6 +70,9 @@ The compose file wires R2 environment variables through from your shell or `.env
    BETTER_AUTH_SECRET=<strong-random-32-plus-character-secret>
    BETTER_AUTH_URL=https://your-domain.example
    NEXT_PUBLIC_APP_URL=https://your-domain.example
+   ADMIN_EMAIL=admin@example.com
+   ADMIN_PASSWORD=<strong-initial-admin-password>
+   ADMIN_NAME="Prayer Tunes Admin"
    R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
    R2_ACCESS_KEY_ID=<r2-access-key-id>
    R2_SECRET_ACCESS_KEY=<r2-secret-access-key>
@@ -80,7 +88,7 @@ The compose file wires R2 environment variables through from your shell or `.env
    npm run db:deploy
    ```
 
-   This repo currently has no committed Prisma migration files. Until migrations are added, create the initial migration before production launch or apply the schema using the deployment process your team approves.
+   The initial Prisma migration is committed under `prisma/migrations`, so this command applies the production schema without requiring `prisma migrate dev`.
 
 5. Seed the first admin account:
 
@@ -88,7 +96,7 @@ The compose file wires R2 environment variables through from your shell or `.env
    npm run db:seed
    ```
 
-   The current seed script is a placeholder, so first-admin creation still needs to be completed or performed through an approved operational path before production use.
+   The seed requires `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_NAME`. It hashes the password with Better Auth's server-side password hashing, writes the standard Better Auth credential account, and does not create a login session.
 
 6. Deploy the Dockerized app and expose port `3000`.
 

@@ -1,6 +1,8 @@
 .git
 .next
 .env
+.env*
+!.env.example
 .env*.local
 .superpowers
 coverage
