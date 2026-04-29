@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { extname, parse } from "node:path";
 
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -59,6 +60,17 @@ export async function putAudioObject({
       Key: key,
       Body: body,
       ContentType: contentType,
+    }),
+  );
+}
+
+export async function deleteAudioObject(key: string): Promise<void> {
+  const env = getR2Env();
+
+  await r2Client().send(
+    new DeleteObjectCommand({
+      Bucket: env.bucketName,
+      Key: key,
     }),
   );
 }

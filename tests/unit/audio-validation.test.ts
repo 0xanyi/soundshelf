@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ALLOWED_AUDIO_TYPES,
   getMaxAudioUploadBytes,
+  validateAudioContentLength,
   validateAudioFileMetadata,
 } from "../../src/lib/validation/audio";
 
@@ -76,4 +77,34 @@ describe("validateAudioFileMetadata", () => {
       });
     },
   );
+});
+
+describe("validateAudioContentLength", () => {
+  it("accepts missing content length for post-parse validation", () => {
+    expect(validateAudioContentLength(null)).toEqual({ valid: true });
+  });
+
+  it("accepts content length at the maximum upload size", () => {
+    expect(validateAudioContentLength(String(getMaxAudioUploadBytes()))).toEqual({
+      valid: true,
+    });
+  });
+
+  it("rejects invalid content length values", () => {
+    expect(validateAudioContentLength("not-a-number")).toEqual({
+      valid: false,
+      reason: "invalid_size",
+      message: "Content-Length must be a finite non-negative integer.",
+    });
+  });
+
+  it("rejects content length above the maximum upload size", () => {
+    expect(validateAudioContentLength(String(getMaxAudioUploadBytes() + 1))).toEqual(
+      {
+        valid: false,
+        reason: "file_too_large",
+        message: `Audio uploads must be ${getMaxAudioUploadBytes()} bytes or smaller.`,
+      },
+    );
+  });
 });

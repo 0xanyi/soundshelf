@@ -1,7 +1,10 @@
 import { db } from "@/lib/db";
 import { jsonError, requireAdminSession } from "@/lib/http/errors";
-import { buildTuneObjectKey, putAudioObject } from "@/lib/r2";
-import { validateAudioFileMetadata } from "@/lib/validation/audio";
+import { buildTuneObjectKey, deleteAudioObject, putAudioObject } from "@/lib/r2";
+import {
+  validateAudioContentLength,
+  validateAudioFileMetadata,
+} from "@/lib/validation/audio";
 
 export const runtime = "nodejs";
 
@@ -10,6 +13,17 @@ export async function POST(request: Request): Promise<Response> {
 
   if (!session) {
     return jsonError("Authentication required.", 401);
+  }
+
+  const contentLengthValidation = validateAudioContentLength(
+    request.headers.get("content-length"),
+  );
+
+  if (!contentLengthValidation.valid) {
+    return jsonError(
+      contentLengthValidation.message,
+      getValidationStatus(contentLengthValidation.reason),
+    );
   }
 
   let formData: FormData;
@@ -33,14 +47,7 @@ export async function POST(request: Request): Promise<Response> {
   });
 
   if (!validation.valid) {
-    const status =
-      validation.reason === "unsupported_type"
-        ? 415
-        : validation.reason === "file_too_large"
-          ? 413
-          : 400;
-
-    return jsonError(validation.message, status);
+    return jsonError(validation.message, getValidationStatus(validation.reason));
   }
 
   const objectKey = buildTuneObjectKey(uploadedFile.name);
@@ -75,8 +82,31 @@ export async function POST(request: Request): Promise<Response> {
   } catch (error) {
     console.error("Failed to create tune record", error);
 
+    try {
+      await deleteAudioObject(objectKey);
+    } catch (cleanupError) {
+      console.error("Failed to clean up tune audio after DB failure", {
+        key: objectKey,
+        error: cleanupError,
+      });
+    }
+
     return jsonError("Tune could not be saved.", 500);
   }
+}
+
+function getValidationStatus(
+  reason: "unsupported_type" | "file_too_large" | "invalid_size",
+) {
+  if (reason === "unsupported_type") {
+    return 415;
+  }
+
+  if (reason === "file_too_large") {
+    return 413;
+  }
+
+  return 400;
 }
 
 function getInitialTitle(fileName: string): string {

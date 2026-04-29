@@ -34,6 +34,38 @@ export function getMaxAudioUploadBytes(): number {
   return MAX_AUDIO_UPLOAD_BYTES;
 }
 
+export function validateAudioContentLength(
+  contentLength: string | null,
+): AudioValidationResult {
+  if (contentLength === null) {
+    return { valid: true };
+  }
+
+  const size = Number(contentLength);
+
+  if (
+    contentLength.trim() === "" ||
+    !Number.isSafeInteger(size) ||
+    size < 0
+  ) {
+    return {
+      valid: false,
+      reason: "invalid_size",
+      message: "Content-Length must be a finite non-negative integer.",
+    };
+  }
+
+  if (size > getMaxAudioUploadBytes()) {
+    return {
+      valid: false,
+      reason: "file_too_large",
+      message: `Audio uploads must be ${getMaxAudioUploadBytes()} bytes or smaller.`,
+    };
+  }
+
+  return { valid: true };
+}
+
 export function validateAudioFileMetadata(
   file: AudioFileMetadata,
 ): AudioValidationResult {
