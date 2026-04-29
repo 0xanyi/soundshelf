@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+dist/
+coverage/
+playwright-report/
+test-results/
+.env
+.env*.local
+.superpowers/
+*.log
+uploads/
+*.mp3
+*.wav
+*.m4a
+*.aac
+*.ogg
