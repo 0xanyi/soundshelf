@@ -113,6 +113,8 @@ The compose file wires R2 environment variables through from your shell or `.env
 
 Create an R2 bucket and API token with object read/write/delete permissions for that bucket. If browsers will access audio through signed URLs, make sure the bucket CORS policy allows requests from `NEXT_PUBLIC_APP_URL` and permits the methods and headers used by audio playback. Do not mount a local uploads volume for production audio; R2 is the source of truth.
 
+Admin tune deletion removes the database record first, then attempts to delete the matching R2 object. If R2 cleanup fails after metadata deletion, the API returns a warning response so the admin UI can surface that storage cleanup needs attention.
+
 ## Testing
 
 Useful checks:

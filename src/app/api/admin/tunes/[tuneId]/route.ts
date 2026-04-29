@@ -1,7 +1,9 @@
 import { db } from "@/lib/db";
 import { jsonError, requireAdminSession } from "@/lib/http/errors";
+import { deleteAudioObject } from "@/lib/r2";
 import {
   getTuneDeletePrismaErrorResponse,
+  getTuneDeleteStorageCleanupWarning,
   parseTuneUpdatePayload,
   serializeAdminTune,
 } from "@/lib/tunes/admin";
@@ -103,6 +105,17 @@ export async function DELETE(
     throw error;
   }
 
-  // R2 object cleanup needs an explicit retention decision and retry strategy.
+  try {
+    await deleteAudioObject(tune.r2ObjectKey);
+  } catch (error) {
+    console.error("Tune metadata deleted but R2 object cleanup failed.", {
+      error,
+      r2ObjectKey: tune.r2ObjectKey,
+      tuneId,
+    });
+
+    return Response.json(getTuneDeleteStorageCleanupWarning(), { status: 202 });
+  }
+
   return new Response(null, { status: 204 });
 }

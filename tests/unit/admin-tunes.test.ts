@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getTuneDeleteStorageCleanupWarning,
   getTuneDeletePrismaErrorResponse,
   parseTuneUpdatePayload,
   serializeAdminTune,
@@ -132,5 +133,14 @@ describe("getTuneDeletePrismaErrorResponse", () => {
         clientVersion: "7.8.0",
       }),
     ).toBeNull();
+  });
+});
+
+describe("getTuneDeleteStorageCleanupWarning", () => {
+  it("returns a safe response body for post-delete storage cleanup failures", () => {
+    expect(getTuneDeleteStorageCleanupWarning()).toEqual({
+      warning:
+        "Tune deleted, but the audio file could not be removed from storage. Please retry cleanup or check R2 configuration.",
+    });
   });
 });

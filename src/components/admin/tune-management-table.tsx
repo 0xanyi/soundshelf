@@ -74,7 +74,12 @@ export function TuneManagementTable({ tunes }: TuneManagementTableProps) {
         throw new Error(await readError(response));
       }
 
-      setMessage("Tune deleted.");
+      if (response.status === 204) {
+        setMessage("Tune deleted.");
+      } else {
+        const warning = await readWarning(response);
+        setMessage(warning ?? "Tune deleted, but storage cleanup needs attention.");
+      }
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Tune could not be deleted.");
@@ -275,5 +280,15 @@ async function readError(response: Response): Promise<string> {
     return body.error ?? "Request failed.";
   } catch {
     return "Request failed.";
+  }
+}
+
+async function readWarning(response: Response): Promise<string | null> {
+  try {
+    const body = (await response.json()) as { warning?: string };
+
+    return body.warning ?? null;
+  } catch {
+    return null;
   }
 }

@@ -46,6 +46,10 @@ export type TuneDeleteErrorResponse = {
   message: string;
 };
 
+export type TuneDeleteStorageCleanupWarning = {
+  warning: string;
+};
+
 const tuneStatuses = new Set<string>(["draft", "active"]);
 
 export function parseTuneUpdatePayload(payload: unknown): TuneUpdateResult {
@@ -118,6 +122,13 @@ export function getTuneDeletePrismaErrorResponse(
   }
 
   return null;
+}
+
+export function getTuneDeleteStorageCleanupWarning(): TuneDeleteStorageCleanupWarning {
+  return {
+    warning:
+      "Tune deleted, but the audio file could not be removed from storage. Please retry cleanup or check R2 configuration.",
+  };
 }
 
 function isPrismaKnownRequestErrorShape(
