@@ -3,7 +3,7 @@
  */
 import "@testing-library/jest-dom/vitest";
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PlaylistBrowser } from "../../src/components/player/playlist-browser";
@@ -13,6 +13,11 @@ type JsonResponse = {
   json: () => Promise<unknown>;
 };
 
+type Deferred<T> = {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+};
+
 function jsonResponse(body: unknown): JsonResponse {
   return {
     ok: true,
@@ -20,8 +25,18 @@ function jsonResponse(body: unknown): JsonResponse {
   };
 }
 
+function deferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((nextResolve) => {
+    resolve = nextResolve;
+  });
+
+  return { promise, resolve };
+}
+
 describe("PlaylistBrowser", () => {
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
   });
 
@@ -92,5 +107,94 @@ describe("PlaylistBrowser", () => {
     await waitFor(() => {
       expect(screen.queryByText("Old Track")).not.toBeInTheDocument();
     });
+  });
+
+  it("ignores stale playlist details that resolve after a newer selection", async () => {
+    const morningJson = deferred<unknown>();
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = input.toString();
+
+      if (url === "/api/public/playlists") {
+        return Promise.resolve(
+          jsonResponse({
+            playlists: [
+              {
+                id: "playlist-morning",
+                title: "Morning",
+                description: null,
+                itemCount: 1,
+              },
+              {
+                id: "playlist-evening",
+                title: "Evening",
+                description: null,
+                itemCount: 1,
+              },
+            ],
+          }),
+        );
+      }
+
+      if (url === "/api/public/playlists/playlist-morning") {
+        return Promise.resolve({
+          ok: true,
+          json: () => morningJson.promise,
+        });
+      }
+
+      if (url === "/api/public/playlists/playlist-evening") {
+        return Promise.resolve(
+          jsonResponse({
+            id: "playlist-evening",
+            title: "Evening",
+            description: null,
+            itemCount: 1,
+            tracks: [
+              {
+                id: "track-new",
+                playlistItemId: "item-new",
+                title: "New Track",
+                description: null,
+                durationSeconds: 120,
+                audioUrl: "https://audio.example.test/new.mp3",
+              },
+            ],
+          }),
+        );
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<PlaylistBrowser />);
+
+    await screen.findByRole("button", { name: /evening/i });
+    fireEvent.click(screen.getByRole("button", { name: /evening/i }));
+
+    expect(await screen.findAllByText("New Track")).toHaveLength(2);
+
+    morningJson.resolve({
+      id: "playlist-morning",
+      title: "Morning",
+      description: null,
+      itemCount: 1,
+      tracks: [
+        {
+          id: "track-old",
+          playlistItemId: "item-old",
+          title: "Old Track",
+          description: null,
+          durationSeconds: 90,
+          audioUrl: "https://audio.example.test/old.mp3",
+        },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Old Track")).not.toBeInTheDocument();
+    });
+    expect(screen.getAllByText("New Track")).toHaveLength(2);
   });
 });

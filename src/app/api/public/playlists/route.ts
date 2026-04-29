@@ -5,7 +5,14 @@ export const runtime = "nodejs";
 
 export async function GET(): Promise<Response> {
   const playlists = await db.playlist.findMany({
-    where: { status: "published" },
+    where: {
+      status: "published",
+      items: {
+        some: {
+          tune: { status: "active" },
+        },
+      },
+    },
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
     select: {
       id: true,
@@ -23,8 +30,11 @@ export async function GET(): Promise<Response> {
       },
     },
   });
+  const serializedPlaylists = playlists
+    .map(serializePublicPlaylistSummary)
+    .filter((playlist) => playlist.itemCount > 0);
 
   return Response.json({
-    playlists: playlists.map(serializePublicPlaylistSummary),
+    playlists: serializedPlaylists,
   });
 }

@@ -95,6 +95,10 @@ export function PlaylistBrowser() {
 
         const playlist = (await response.json()) as PublicPlaylistDetail;
 
+        if (controller.signal.aborted) {
+          return;
+        }
+
         setSelectedPlaylist(playlist);
         setDetailState("idle");
       } catch (error) {
