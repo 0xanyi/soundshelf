@@ -1,0 +1,112 @@
+# Prayer Tunes
+
+Prayer Tunes is a Next.js app for publishing and playing curated prayer tune playlists. PostgreSQL stores app and auth data through Prisma, Better Auth handles admin sessions, and uploaded audio stays in Cloudflare R2.
+
+## Local Setup
+
+1. Install dependencies:
+
+   ```bash
+   npm ci
+   ```
+
+2. Copy the environment example and fill in local values:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   `DATABASE_URL` should point at PostgreSQL. `BETTER_AUTH_SECRET` must be a strong random value of at least 32 characters. R2 variables are required for real audio upload and playback flows.
+
+3. Start PostgreSQL locally or with Docker Compose:
+
+   ```bash
+   docker compose up postgres
+   ```
+
+4. Prepare Prisma and run the app:
+
+   ```bash
+   npm run db:generate
+   npm run db:migrate
+   npm run dev
+   ```
+
+5. Seed data when a seed implementation is available:
+
+   ```bash
+   npm run db:seed
+   ```
+
+## Docker
+
+Build the production image:
+
+```bash
+docker build -t prayer-tunes .
+```
+
+Run the app with the included PostgreSQL service:
+
+```bash
+docker compose up --build
+```
+
+The compose file wires R2 environment variables through from your shell or `.env`, but it does not provide fake object storage. Audio uploads are expected to use Cloudflare R2 and should not be stored on the container filesystem.
+
+## Dokploy Deployment
+
+1. Create a Dokploy PostgreSQL service for the app.
+2. Create an application from this repository and use the Dockerfile build.
+3. Configure production environment variables:
+
+   ```bash
+   DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DB
+   BETTER_AUTH_SECRET=<strong-random-32-plus-character-secret>
+   BETTER_AUTH_URL=https://your-domain.example
+   NEXT_PUBLIC_APP_URL=https://your-domain.example
+   R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+   R2_ACCESS_KEY_ID=<r2-access-key-id>
+   R2_SECRET_ACCESS_KEY=<r2-secret-access-key>
+   R2_BUCKET_NAME=<r2-bucket-name>
+   MAX_AUDIO_UPLOAD_BYTES=52428800
+   ```
+
+   `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` must match the deployed public URL, including protocol. Use the same URL in Better Auth and the browser-facing app configuration to avoid auth callback and cookie issues.
+
+4. Run production migrations after the database is attached:
+
+   ```bash
+   npm run db:deploy
+   ```
+
+   This repo currently has no committed Prisma migration files. Until migrations are added, create the initial migration before production launch or apply the schema using the deployment process your team approves.
+
+5. Seed the first admin account:
+
+   ```bash
+   npm run db:seed
+   ```
+
+   The current seed script is a placeholder, so first-admin creation still needs to be completed or performed through an approved operational path before production use.
+
+6. Deploy the Dockerized app and expose port `3000`.
+
+## Cloudflare R2 Notes
+
+Create an R2 bucket and API token with object read/write/delete permissions for that bucket. If browsers will access audio through signed URLs, make sure the bucket CORS policy allows requests from `NEXT_PUBLIC_APP_URL` and permits the methods and headers used by audio playback. Do not mount a local uploads volume for production audio; R2 is the source of truth.
+
+## Testing
+
+Useful checks:
+
+```bash
+npm run build
+npm run typecheck
+npm run lint
+npm test
+npm run test:e2e
+docker build -t prayer-tunes .
+```
+
+The E2E suite currently uses mocked public data and does not cover the real R2 upload path or a full Postgres-backed Better Auth flow.
