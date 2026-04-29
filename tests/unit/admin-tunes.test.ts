@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getTuneDeletePrismaErrorResponse,
   parseTuneUpdatePayload,
   serializeAdminTune,
 } from "../../src/lib/tunes/admin";
@@ -95,5 +96,41 @@ describe("serializeAdminTune", () => {
       playlistItemCount: 2,
       canDelete: false,
     });
+  });
+});
+
+describe("getTuneDeletePrismaErrorResponse", () => {
+  it("maps foreign key constraint failures to a playlist usage conflict", () => {
+    expect(
+      getTuneDeletePrismaErrorResponse({
+        code: "P2003",
+        clientVersion: "7.8.0",
+        meta: { modelName: "Tune", field_name: "PlaylistItem_tuneId_fkey" },
+      }),
+    ).toEqual({
+      status: 409,
+      message: "Tune is used in a playlist and cannot be deleted.",
+    });
+  });
+
+  it("maps missing delete records to not found", () => {
+    expect(
+      getTuneDeletePrismaErrorResponse({
+        code: "P2025",
+        clientVersion: "7.8.0",
+      }),
+    ).toEqual({
+      status: 404,
+      message: "Tune not found.",
+    });
+  });
+
+  it("ignores unrelated Prisma errors", () => {
+    expect(
+      getTuneDeletePrismaErrorResponse({
+        code: "P2002",
+        clientVersion: "7.8.0",
+      }),
+    ).toBeNull();
   });
 });

@@ -41,6 +41,11 @@ type TuneUpdateResult =
   | { valid: true; data: TuneUpdateData }
   | { valid: false; message: string };
 
+export type TuneDeleteErrorResponse = {
+  status: 404 | 409;
+  message: string;
+};
+
 const tuneStatuses = new Set<string>(["draft", "active"]);
 
 export function parseTuneUpdatePayload(payload: unknown): TuneUpdateResult {
@@ -89,4 +94,41 @@ export function serializeAdminTune(tune: AdminTuneRecord): SerializedAdminTune {
     playlistItemCount,
     canDelete: playlistItemCount === 0,
   };
+}
+
+export function getTuneDeletePrismaErrorResponse(
+  error: unknown,
+): TuneDeleteErrorResponse | null {
+  if (!isPrismaKnownRequestErrorShape(error)) {
+    return null;
+  }
+
+  if (error.code === "P2003") {
+    return {
+      status: 409,
+      message: "Tune is used in a playlist and cannot be deleted.",
+    };
+  }
+
+  if (error.code === "P2025") {
+    return {
+      status: 404,
+      message: "Tune not found.",
+    };
+  }
+
+  return null;
+}
+
+function isPrismaKnownRequestErrorShape(
+  error: unknown,
+): error is { code: string; clientVersion: string } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof error.code === "string" &&
+    "clientVersion" in error &&
+    typeof error.clientVersion === "string"
+  );
 }

@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { jsonError, requireAdminSession } from "@/lib/http/errors";
 import {
+  getTuneDeletePrismaErrorResponse,
   parseTuneUpdatePayload,
   serializeAdminTune,
 } from "@/lib/tunes/admin";
@@ -88,9 +89,19 @@ export async function DELETE(
     return jsonError("Tune is used in a playlist and cannot be deleted.", 409);
   }
 
-  await db.tune.delete({
-    where: { id: tuneId },
-  });
+  try {
+    await db.tune.delete({
+      where: { id: tuneId },
+    });
+  } catch (error) {
+    const deleteErrorResponse = getTuneDeletePrismaErrorResponse(error);
+
+    if (deleteErrorResponse) {
+      return jsonError(deleteErrorResponse.message, deleteErrorResponse.status);
+    }
+
+    throw error;
+  }
 
   // R2 object cleanup needs an explicit retention decision and retry strategy.
   return new Response(null, { status: 204 });
