@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   ALLOWED_AUDIO_TYPES,
   getMaxAudioUploadBytes,
+  getMaxAudioUploadRequestBytes,
   validateAudioContentLength,
   validateAudioFileMetadata,
 } from "../../src/lib/validation/audio";
@@ -144,6 +145,12 @@ describe("validateAudioContentLength", () => {
     });
   });
 
+  it("accepts content length slightly above the audio file limit for multipart overhead", () => {
+    expect(validateAudioContentLength(String(getMaxAudioUploadBytes() + 1))).toEqual({
+      valid: true,
+    });
+  });
+
   it("rejects invalid content length values", () => {
     expect(validateAudioContentLength("not-a-number")).toEqual({
       valid: false,
@@ -152,13 +159,13 @@ describe("validateAudioContentLength", () => {
     });
   });
 
-  it("rejects content length above the maximum upload size", () => {
-    expect(validateAudioContentLength(String(getMaxAudioUploadBytes() + 1))).toEqual(
-      {
-        valid: false,
-        reason: "file_too_large",
-        message: `Audio uploads must be ${getMaxAudioUploadBytes()} bytes or smaller.`,
-      },
-    );
+  it("rejects content length above the request cap", () => {
+    const requestCapBytes = getMaxAudioUploadRequestBytes();
+
+    expect(validateAudioContentLength(String(requestCapBytes + 1))).toEqual({
+      valid: false,
+      reason: "file_too_large",
+      message: `Audio upload requests must be ${requestCapBytes} bytes or smaller.`,
+    });
   });
 });

@@ -1,4 +1,5 @@
 export const MAX_AUDIO_UPLOAD_BYTES = 50 * 1024 * 1024;
+const MULTIPART_UPLOAD_OVERHEAD_BYTES = 1024 * 1024;
 
 export const ALLOWED_AUDIO_TYPES = [
   "audio/aac",
@@ -54,6 +55,12 @@ export function getMaxAudioUploadBytes(): number {
   return maxBytes;
 }
 
+export function getMaxAudioUploadRequestBytes(): number {
+  // Content-Length includes multipart boundaries and field headers, so the
+  // pre-parse request cap allows 1 MiB over the exact audio file-size limit.
+  return getMaxAudioUploadBytes() + MULTIPART_UPLOAD_OVERHEAD_BYTES;
+}
+
 export function validateAudioContentLength(
   contentLength: string | null,
 ): AudioValidationResult {
@@ -79,13 +86,13 @@ export function validateAudioContentLength(
     };
   }
 
-  const maxAudioUploadBytes = getMaxAudioUploadBytes();
+  const maxAudioUploadRequestBytes = getMaxAudioUploadRequestBytes();
 
-  if (size > maxAudioUploadBytes) {
+  if (size > maxAudioUploadRequestBytes) {
     return {
       valid: false,
       reason: "file_too_large",
-      message: `Audio uploads must be ${maxAudioUploadBytes} bytes or smaller.`,
+      message: `Audio upload requests must be ${maxAudioUploadRequestBytes} bytes or smaller.`,
     };
   }
 

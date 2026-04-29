@@ -87,6 +87,7 @@ The compose file wires R2 environment variables through from your shell or `.env
    ```
 
    `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` must match the deployed public URL, including protocol. Use the same URL in Better Auth and the browser-facing app configuration to avoid auth callback and cookie issues.
+   `MAX_AUDIO_UPLOAD_BYTES` is the exact uploaded audio file-size limit. Multipart upload requests are allowed an additional 1 MiB of request overhead before parsing.
 
 4. Run production migrations after the database is attached and before serving traffic:
 
