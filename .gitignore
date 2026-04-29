@@ -9,6 +9,7 @@ test-results/
 .env*.local
 .superpowers/
 *.log
+*.tsbuildinfo
 uploads/
 *.mp3
 *.wav

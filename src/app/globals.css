@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-muted: hsl(var(--muted));
+  --color-accent: hsl(var(--accent));
+}
+
 :root {
   --background: 42 30% 97%;
   --foreground: 218 20% 16%;
