@@ -35,7 +35,23 @@ export type AudioValidationResult =
     };
 
 export function getMaxAudioUploadBytes(): number {
-  return MAX_AUDIO_UPLOAD_BYTES;
+  const configuredMaxBytes = process.env.MAX_AUDIO_UPLOAD_BYTES;
+
+  if (configuredMaxBytes === undefined) {
+    return MAX_AUDIO_UPLOAD_BYTES;
+  }
+
+  const maxBytes = Number(configuredMaxBytes);
+
+  if (
+    configuredMaxBytes.trim() === "" ||
+    !Number.isSafeInteger(maxBytes) ||
+    maxBytes <= 0
+  ) {
+    return MAX_AUDIO_UPLOAD_BYTES;
+  }
+
+  return maxBytes;
 }
 
 export function validateAudioContentLength(
@@ -63,11 +79,13 @@ export function validateAudioContentLength(
     };
   }
 
-  if (size > getMaxAudioUploadBytes()) {
+  const maxAudioUploadBytes = getMaxAudioUploadBytes();
+
+  if (size > maxAudioUploadBytes) {
     return {
       valid: false,
       reason: "file_too_large",
-      message: `Audio uploads must be ${getMaxAudioUploadBytes()} bytes or smaller.`,
+      message: `Audio uploads must be ${maxAudioUploadBytes} bytes or smaller.`,
     };
   }
 
@@ -93,11 +111,13 @@ export function validateAudioFileMetadata(
     };
   }
 
-  if (file.size > getMaxAudioUploadBytes()) {
+  const maxAudioUploadBytes = getMaxAudioUploadBytes();
+
+  if (file.size > maxAudioUploadBytes) {
     return {
       valid: false,
       reason: "file_too_large",
-      message: `Audio files must be ${getMaxAudioUploadBytes()} bytes or smaller.`,
+      message: `Audio files must be ${maxAudioUploadBytes} bytes or smaller.`,
     };
   }
 

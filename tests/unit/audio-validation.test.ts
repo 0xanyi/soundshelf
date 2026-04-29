@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
   ALLOWED_AUDIO_TYPES,
@@ -6,6 +6,40 @@ import {
   validateAudioContentLength,
   validateAudioFileMetadata,
 } from "../../src/lib/validation/audio";
+
+const DEFAULT_MAX_AUDIO_UPLOAD_BYTES = 50 * 1024 * 1024;
+const originalMaxAudioUploadBytes = process.env.MAX_AUDIO_UPLOAD_BYTES;
+
+afterEach(() => {
+  if (originalMaxAudioUploadBytes === undefined) {
+    delete process.env.MAX_AUDIO_UPLOAD_BYTES;
+  } else {
+    process.env.MAX_AUDIO_UPLOAD_BYTES = originalMaxAudioUploadBytes;
+  }
+});
+
+describe("getMaxAudioUploadBytes", () => {
+  it("defaults to 50 MiB when MAX_AUDIO_UPLOAD_BYTES is missing", () => {
+    delete process.env.MAX_AUDIO_UPLOAD_BYTES;
+
+    expect(getMaxAudioUploadBytes()).toBe(DEFAULT_MAX_AUDIO_UPLOAD_BYTES);
+  });
+
+  it("reads MAX_AUDIO_UPLOAD_BYTES at runtime", () => {
+    process.env.MAX_AUDIO_UPLOAD_BYTES = "1048576";
+
+    expect(getMaxAudioUploadBytes()).toBe(1_048_576);
+  });
+
+  it.each(["", "not-a-number", "Infinity", "0", "-1"])(
+    "falls back to 50 MiB when MAX_AUDIO_UPLOAD_BYTES is invalid: %s",
+    (value) => {
+      process.env.MAX_AUDIO_UPLOAD_BYTES = value;
+
+      expect(getMaxAudioUploadBytes()).toBe(DEFAULT_MAX_AUDIO_UPLOAD_BYTES);
+    },
+  );
+});
 
 describe("validateAudioFileMetadata", () => {
   it("accepts MP3 files", () => {
@@ -44,6 +78,22 @@ describe("validateAudioFileMetadata", () => {
       valid: false,
       reason: "file_too_large",
       message: `Audio files must be ${getMaxAudioUploadBytes()} bytes or smaller.`,
+    });
+  });
+
+  it("uses MAX_AUDIO_UPLOAD_BYTES when rejecting oversized files", () => {
+    process.env.MAX_AUDIO_UPLOAD_BYTES = "1024";
+
+    expect(
+      validateAudioFileMetadata({
+        type: "audio/mpeg",
+        size: 1_025,
+        name: "large.mp3",
+      }),
+    ).toEqual({
+      valid: false,
+      reason: "file_too_large",
+      message: "Audio files must be 1024 bytes or smaller.",
     });
   });
 
