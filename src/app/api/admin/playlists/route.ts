@@ -1,8 +1,10 @@
 import { db } from "@/lib/db";
 import { jsonError, requireAdminSession } from "@/lib/http/errors";
 import {
+  isPlaylistPublishRequested,
   parsePlaylistMutationPayload,
   serializeAdminPlaylist,
+  validatePlaylistPublishReadiness,
 } from "@/lib/playlists/admin";
 
 export const runtime = "nodejs";
@@ -50,6 +52,14 @@ export async function POST(request: Request): Promise<Response> {
 
   if (!validation.valid) {
     return jsonError(validation.message, 400);
+  }
+
+  if (isPlaylistPublishRequested(validation.data)) {
+    const readiness = validatePlaylistPublishReadiness(0);
+
+    if (!readiness.valid) {
+      return jsonError(readiness.message, 400);
+    }
   }
 
   const playlist = await db.playlist.create({

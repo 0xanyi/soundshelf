@@ -120,6 +120,7 @@ model PlaylistItem {
   tune       Tune     @relation(fields: [tuneId], references: [id], onDelete: Restrict)
 
   @@unique([playlistId, position])
+  @@unique([playlistId, tuneId])
   @@index([playlistId])
   @@index([tuneId])
 }

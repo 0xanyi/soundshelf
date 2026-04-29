@@ -3,6 +3,8 @@ import { jsonError, requireAdminSession } from "@/lib/http/errors";
 import {
   buildMovedPlaylistItemPositions,
   buildNormalizedPlaylistItemPositions,
+  getPlaylistItemCreatePrismaErrorResponse,
+  isPlaylistItemPositionConflict,
   parsePlaylistReorderPayload,
   serializeAdminPlaylistItem,
 } from "@/lib/playlists/admin";
@@ -14,6 +16,8 @@ type PlaylistItemsRouteContext = {
     playlistId: string;
   }>;
 };
+
+const maxAddItemAttempts = 3;
 
 export async function POST(
   request: Request,
@@ -43,7 +47,7 @@ export async function POST(
   }
 
   const { playlistId } = await context.params;
-  const [playlist, tune, duplicateItem, lastItem] = await Promise.all([
+  const [playlist, tune] = await Promise.all([
     db.playlist.findUnique({
       where: { id: playlistId },
       select: { id: true },
@@ -51,15 +55,6 @@ export async function POST(
     db.tune.findFirst({
       where: { id: tuneId, status: "active" },
       select: { id: true },
-    }),
-    db.playlistItem.findFirst({
-      where: { playlistId, tuneId },
-      select: { id: true },
-    }),
-    db.playlistItem.findFirst({
-      where: { playlistId },
-      orderBy: { position: "desc" },
-      select: { position: true },
     }),
   ]);
 
@@ -71,30 +66,55 @@ export async function POST(
     return jsonError("Active tune not found.", 404);
   }
 
-  if (duplicateItem) {
-    return jsonError("Tune is already in this playlist.", 409);
+  for (let attempt = 1; attempt <= maxAddItemAttempts; attempt += 1) {
+    try {
+      const item = await db.$transaction(async (tx) => {
+        const lastItem = await tx.playlistItem.findFirst({
+          where: { playlistId },
+          orderBy: { position: "desc" },
+          select: { position: true },
+        });
+
+        return tx.playlistItem.create({
+          data: {
+            playlistId,
+            tuneId,
+            position: lastItem ? lastItem.position + 1 : 0,
+          },
+          include: {
+            tune: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                durationSeconds: true,
+                status: true,
+              },
+            },
+          },
+        });
+      });
+
+      return Response.json(serializeAdminPlaylistItem(item), { status: 201 });
+    } catch (error) {
+      const createErrorResponse = getPlaylistItemCreatePrismaErrorResponse(error);
+
+      if (
+        isPlaylistItemPositionConflict(error) &&
+        attempt < maxAddItemAttempts
+      ) {
+        continue;
+      }
+
+      if (createErrorResponse) {
+        return jsonError(createErrorResponse.message, createErrorResponse.status);
+      }
+
+      throw error;
+    }
   }
 
-  const item = await db.playlistItem.create({
-    data: {
-      playlistId,
-      tuneId,
-      position: lastItem ? lastItem.position + 1 : 0,
-    },
-    include: {
-      tune: {
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          durationSeconds: true,
-          status: true,
-        },
-      },
-    },
-  });
-
-  return Response.json(serializeAdminPlaylistItem(item), { status: 201 });
+  return jsonError("Playlist item position changed. Please try again.", 409);
 }
 
 export async function PATCH(

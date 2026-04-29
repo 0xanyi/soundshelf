@@ -1,8 +1,10 @@
 import { db } from "@/lib/db";
 import { jsonError, requireAdminSession } from "@/lib/http/errors";
 import {
+  isPlaylistPublishRequested,
   parsePlaylistMutationPayload,
   serializeAdminPlaylist,
+  validatePlaylistPublishReadiness,
 } from "@/lib/playlists/admin";
 
 export const runtime = "nodejs";
@@ -47,6 +49,20 @@ export async function PATCH(
 
   if (!existingPlaylist) {
     return jsonError("Playlist not found.", 404);
+  }
+
+  if (isPlaylistPublishRequested(validation.data)) {
+    const activeTuneCount = await db.playlistItem.count({
+      where: {
+        playlistId,
+        tune: { status: "active" },
+      },
+    });
+    const readiness = validatePlaylistPublishReadiness(activeTuneCount);
+
+    if (!readiness.valid) {
+      return jsonError(readiness.message, 409);
+    }
   }
 
   const playlist = await db.playlist.update({

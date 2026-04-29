@@ -29,6 +29,15 @@ type PlaylistDraft = {
   status: "draft" | "published";
 };
 
+type PlaylistItemsMutationResponse = {
+  items: Array<{ id: string; position: number }>;
+};
+
+type PlaylistItemsState = {
+  sourceItems: SerializedAdminPlaylistItem[];
+  currentItems: SerializedAdminPlaylistItem[];
+};
+
 export function PlaylistEditor({
   activeTunes,
   items,
@@ -40,10 +49,20 @@ export function PlaylistEditor({
     description: playlist.description ?? "",
     status: playlist.status,
   }));
-  const [currentItems, setCurrentItems] = useState(items);
+  const [itemsState, setItemsState] = useState<PlaylistItemsState>(() => ({
+    sourceItems: items,
+    currentItems: items,
+  }));
   const [selectedTuneId, setSelectedTuneId] = useState("");
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  let currentItems = itemsState.currentItems;
+
+  if (itemsState.sourceItems !== items) {
+    currentItems = items;
+    setItemsState({ sourceItems: items, currentItems: items });
+  }
+
   const availableTunes = useMemo(() => {
     const usedTuneIds = new Set(currentItems.map((item) => item.tune.id));
 
@@ -106,7 +125,7 @@ export function PlaylistEditor({
       }
 
       const item = (await response.json()) as SerializedAdminPlaylistItem;
-      setCurrentItems((current) => [...current, item]);
+      updateCurrentItems((current) => [...current, item]);
       setSelectedTuneId("");
       setMessage("Tune added.");
       router.refresh();
@@ -135,7 +154,13 @@ export function PlaylistEditor({
         throw new Error(await readError(response));
       }
 
-      setCurrentItems((current) => reorderItems(current, itemId, targetIndex));
+      const body = (await response.json()) as PlaylistItemsMutationResponse;
+      updateCurrentItems((current) =>
+        applyServerItemPositions(
+          reorderItems(current, itemId, targetIndex),
+          body.items,
+        ),
+      );
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Item could not be moved.");
@@ -162,10 +187,12 @@ export function PlaylistEditor({
         throw new Error(await readError(response));
       }
 
-      setCurrentItems((current) =>
-        current
-          .filter((item) => item.id !== itemId)
-          .map((item, position) => ({ ...item, position })),
+      const body = (await response.json()) as PlaylistItemsMutationResponse;
+      updateCurrentItems((current) =>
+        applyServerItemPositions(
+          current.filter((item) => item.id !== itemId),
+          body.items,
+        ),
       );
       setMessage("Item removed.");
       router.refresh();
@@ -174,6 +201,17 @@ export function PlaylistEditor({
     } finally {
       setPendingAction(null);
     }
+  }
+
+  function updateCurrentItems(
+    updater: (
+      currentItems: SerializedAdminPlaylistItem[],
+    ) => SerializedAdminPlaylistItem[],
+  ) {
+    setItemsState((state) => ({
+      ...state,
+      currentItems: updater(state.currentItems),
+    }));
   }
 
   return (
@@ -407,6 +445,23 @@ function reorderItems(
   nextItems.splice(boundedTargetIndex, 0, movedItem);
 
   return nextItems.map((item, position) => ({ ...item, position }));
+}
+
+function applyServerItemPositions(
+  items: SerializedAdminPlaylistItem[],
+  positions: Array<{ id: string; position: number }>,
+): SerializedAdminPlaylistItem[] {
+  const positionById = new Map(
+    positions.map((item) => [item.id, item.position] as const),
+  );
+
+  return items
+    .filter((item) => positionById.has(item.id))
+    .map((item) => ({
+      ...item,
+      position: positionById.get(item.id) ?? item.position,
+    }))
+    .sort((left, right) => left.position - right.position);
 }
 
 function formatDuration(seconds: number): string {

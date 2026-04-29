@@ -48,6 +48,11 @@ export type SerializedAdminPlaylistItem = {
   };
 };
 
+export type PlaylistPrismaErrorResponse = {
+  status: 409;
+  message: string;
+};
+
 type PlaylistMutationData = {
   title?: string;
   description?: string | null;
@@ -68,6 +73,8 @@ type PlaylistReorderResult =
   | { valid: false; message: string };
 
 const playlistStatuses = new Set<string>(["draft", "published"]);
+const publishReadinessMessage =
+  "Playlist must include at least one active tune before publishing.";
 
 export function parsePlaylistMutationPayload(
   payload: unknown,
@@ -148,6 +155,57 @@ export function buildNormalizedPlaylistItemPositions<TItem extends PositionedIte
   return normalizePositions(items);
 }
 
+export function isPlaylistPublishRequested(
+  data: { status?: PlaylistStatus },
+): boolean {
+  return data.status === "published";
+}
+
+export function validatePlaylistPublishReadiness(
+  activeTuneCount: number,
+): { valid: true } | { valid: false; message: string } {
+  if (activeTuneCount > 0) {
+    return { valid: true };
+  }
+
+  return {
+    valid: false,
+    message: publishReadinessMessage,
+  };
+}
+
+export function getPlaylistItemCreatePrismaErrorResponse(
+  error: unknown,
+): PlaylistPrismaErrorResponse | null {
+  if (!isPrismaKnownRequestErrorShape(error) || error.code !== "P2002") {
+    return null;
+  }
+
+  const target = getPrismaErrorTarget(error);
+
+  if (
+    prismaTargetIncludes(target, "playlistId") &&
+    prismaTargetIncludes(target, "tuneId")
+  ) {
+    return {
+      status: 409,
+      message: "Tune is already in this playlist.",
+    };
+  }
+
+  if (
+    prismaTargetIncludes(target, "playlistId") &&
+    prismaTargetIncludes(target, "position")
+  ) {
+    return {
+      status: 409,
+      message: "Playlist item position changed. Please try again.",
+    };
+  }
+
+  return null;
+}
+
 export function serializeAdminPlaylist(
   playlist: AdminPlaylistRecord,
 ): SerializedAdminPlaylist {
@@ -170,4 +228,54 @@ export function serializeAdminPlaylistItem(
     position: item.position,
     tune: item.tune,
   };
+}
+
+export function isPlaylistItemPositionConflict(error: unknown): boolean {
+  if (!isPrismaKnownRequestErrorShape(error) || error.code !== "P2002") {
+    return false;
+  }
+
+  const target = getPrismaErrorTarget(error);
+
+  return (
+    prismaTargetIncludes(target, "playlistId") &&
+    prismaTargetIncludes(target, "position")
+  );
+}
+
+function prismaTargetIncludes(target: string[], fieldName: string): boolean {
+  return target.some(
+    (value) => value === fieldName || value.includes(fieldName),
+  );
+}
+
+function getPrismaErrorTarget(error: { meta?: unknown }): string[] {
+  if (!error.meta || typeof error.meta !== "object") {
+    return [];
+  }
+
+  const target = (error.meta as Record<string, unknown>).target;
+
+  if (Array.isArray(target)) {
+    return target.filter((value): value is string => typeof value === "string");
+  }
+
+  if (typeof target === "string") {
+    return [target];
+  }
+
+  return [];
+}
+
+function isPrismaKnownRequestErrorShape(
+  error: unknown,
+): error is { code: string; clientVersion: string; meta?: unknown } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof error.code === "string" &&
+    "clientVersion" in error &&
+    typeof error.clientVersion === "string"
+  );
 }
