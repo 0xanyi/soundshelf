@@ -57,6 +57,12 @@ Run the app with the included PostgreSQL service:
 docker compose up --build
 ```
 
+On a fresh PostgreSQL volume, Compose first runs the one-shot `migrate` service with `npm run db:deploy`. The `app` service starts only after that migration job exits successfully. To run migrations without starting the app, use:
+
+```bash
+docker compose run --rm migrate
+```
+
 The compose file wires R2 environment variables through from your shell or `.env`, but it does not provide fake object storage. Audio uploads are expected to use Cloudflare R2 and should not be stored on the container filesystem.
 
 ## Dokploy Deployment
@@ -82,13 +88,15 @@ The compose file wires R2 environment variables through from your shell or `.env
 
    `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` must match the deployed public URL, including protocol. Use the same URL in Better Auth and the browser-facing app configuration to avoid auth callback and cookie issues.
 
-4. Run production migrations after the database is attached:
+4. Run production migrations after the database is attached and before serving traffic:
 
    ```bash
    npm run db:deploy
    ```
 
    The initial Prisma migration is committed under `prisma/migrations`, so this command applies the production schema without requiring `prisma migrate dev`.
+
+   In Dokploy, configure this as a pre-deploy command or one-shot job using the built image when possible. If you do not want migrations to run from the web container, run the same command in a separate job that has the production `DATABASE_URL` before the app container is started or updated.
 
 5. Seed the first admin account:
 
