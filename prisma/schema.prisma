@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TuneStatus {
+  draft
+  active
+}
+
+enum PlaylistStatus {
+  draft
+  published
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  @@index([createdAt])
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@index([identifier])
+  @@index([expiresAt])
+}
+
+model Tune {
+  id              String         @id @default(cuid())
+  title           String
+  description     String?
+  durationSeconds Int
+  mimeType        String
+  fileSizeBytes   BigInt
+  r2ObjectKey     String         @unique
+  status          TuneStatus     @default(draft)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  playlistItems   PlaylistItem[]
+
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@index([title])
+}
+
+model Playlist {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  status      PlaylistStatus @default(draft)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  items       PlaylistItem[]
+
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@index([title])
+}
+
+model PlaylistItem {
+  id         String   @id @default(cuid())
+  playlistId String
+  tuneId     String
+  position   Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  tune       Tune     @relation(fields: [tuneId], references: [id], onDelete: Restrict)
+
+  @@unique([playlistId, position])
+  @@index([playlistId])
+  @@index([tuneId])
+}
