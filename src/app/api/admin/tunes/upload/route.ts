@@ -96,8 +96,16 @@ export async function POST(request: Request): Promise<Response> {
 }
 
 function getValidationStatus(
-  reason: "unsupported_type" | "file_too_large" | "invalid_size",
+  reason:
+    | "unsupported_type"
+    | "file_too_large"
+    | "invalid_size"
+    | "missing_content_length",
 ) {
+  if (reason === "missing_content_length") {
+    return 411;
+  }
+
   if (reason === "unsupported_type") {
     return 415;
   }

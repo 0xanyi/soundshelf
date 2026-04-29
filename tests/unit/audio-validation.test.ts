@@ -80,8 +80,12 @@ describe("validateAudioFileMetadata", () => {
 });
 
 describe("validateAudioContentLength", () => {
-  it("accepts missing content length for post-parse validation", () => {
-    expect(validateAudioContentLength(null)).toEqual({ valid: true });
+  it("rejects missing content length", () => {
+    expect(validateAudioContentLength(null)).toEqual({
+      valid: false,
+      reason: "missing_content_length",
+      message: "Content-Length is required for audio uploads.",
+    });
   });
 
   it("accepts content length at the maximum upload size", () => {

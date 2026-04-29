@@ -26,7 +26,11 @@ export type AudioValidationResult =
     }
   | {
       valid: false;
-      reason: "unsupported_type" | "file_too_large" | "invalid_size";
+      reason:
+        | "unsupported_type"
+        | "file_too_large"
+        | "invalid_size"
+        | "missing_content_length";
       message: string;
     };
 
@@ -38,7 +42,11 @@ export function validateAudioContentLength(
   contentLength: string | null,
 ): AudioValidationResult {
   if (contentLength === null) {
-    return { valid: true };
+    return {
+      valid: false,
+      reason: "missing_content_length",
+      message: "Content-Length is required for audio uploads.",
+    };
   }
 
   const size = Number(contentLength);
