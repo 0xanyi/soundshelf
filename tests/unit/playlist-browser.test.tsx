@@ -98,7 +98,10 @@ describe("PlaylistBrowser", () => {
 
     render(<PlaylistBrowser />);
 
-    expect(await screen.findAllByText("Old Track")).toHaveLength(2);
+    // The active track title appears in the player display, in the
+    // desktop sidebar's expanded track row, and in the mobile accordion's
+    // track row — three render locations under jsdom.
+    expect(await screen.findAllByText("Old Track")).toHaveLength(3);
 
     // The browser renders both a mobile rail and a desktop sidebar at the
     // same time in jsdom (no media-query gating); click the first match.
@@ -180,7 +183,7 @@ describe("PlaylistBrowser", () => {
     });
     fireEvent.click(eveningButtons[0]);
 
-    expect(await screen.findAllByText("New Track")).toHaveLength(2);
+    expect(await screen.findAllByText("New Track")).toHaveLength(3);
 
     morningJson.resolve({
       id: "playlist-morning",
@@ -202,6 +205,6 @@ describe("PlaylistBrowser", () => {
     await waitFor(() => {
       expect(screen.queryByText("Old Track")).not.toBeInTheDocument();
     });
-    expect(screen.getAllByText("New Track")).toHaveLength(2);
+    expect(screen.getAllByText("New Track")).toHaveLength(3);
   });
 });

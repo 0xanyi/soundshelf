@@ -33,6 +33,12 @@ type AudioPlayerProps = {
   currentIndex: number;
   onCurrentIndexChange: (nextIndex: number) => void;
   playlistTitle?: string | null;
+  /**
+   * Called when the audio element resolves a real duration that differs
+   * from the metadata we received from the API. Used to self-heal tracks
+   * that were uploaded before durations were captured.
+   */
+  onDurationDiscovered?: (track: PlayerTrack, durationSeconds: number) => void;
 };
 
 export function AudioPlayer({
@@ -40,6 +46,7 @@ export function AudioPlayer({
   currentIndex,
   onCurrentIndexChange,
   playlistTitle,
+  onDurationDiscovered,
 }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -217,7 +224,23 @@ export function AudioPlayer({
         preload="metadata"
         src={currentTrack.audioUrl}
         onCanPlay={() => setLoadError(null)}
-        onDurationChange={(event) => setDuration(event.currentTarget.duration || 0)}
+        onDurationChange={(event) => {
+          const next = event.currentTarget.duration || 0;
+          setDuration(next);
+
+          // If the metadata we got from the API was missing or stale,
+          // surface the real duration so the parent can repair its cache
+          // (and, if appropriate, persist the fix server-side).
+          if (
+            currentTrack &&
+            onDurationDiscovered &&
+            Number.isFinite(next) &&
+            next > 0 &&
+            Math.abs(next - currentTrack.durationSeconds) >= 1
+          ) {
+            onDurationDiscovered(currentTrack, next);
+          }
+        }}
         onEnded={handleEnded}
         onError={() => {
           setIsPlaying(false);

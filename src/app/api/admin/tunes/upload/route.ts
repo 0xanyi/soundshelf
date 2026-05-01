@@ -50,6 +50,8 @@ export async function POST(request: Request): Promise<Response> {
     return jsonError(validation.message, getValidationStatus(validation.reason));
   }
 
+  const durationSeconds = parseDurationField(formData.get("durationSeconds"));
+
   const objectKey = buildTuneObjectKey(uploadedFile.name);
   const body = Buffer.from(await uploadedFile.arrayBuffer());
 
@@ -70,7 +72,7 @@ export async function POST(request: Request): Promise<Response> {
       data: {
         title: getInitialTitle(uploadedFile.name),
         description: null,
-        durationSeconds: 0,
+        durationSeconds,
         mimeType: uploadedFile.type,
         fileSizeBytes: BigInt(uploadedFile.size),
         r2ObjectKey: objectKey,
@@ -121,6 +123,23 @@ function getInitialTitle(fileName: string): string {
   const withoutExtension = fileName.replace(/\.[^/.]+$/, "").trim();
 
   return withoutExtension || "Untitled tune";
+}
+
+// Cap a track at 24 hours so a malformed value can never poison the schema.
+const MAX_DURATION_SECONDS = 24 * 60 * 60;
+
+function parseDurationField(field: FormDataEntryValue | null): number {
+  if (typeof field !== "string" || field.trim() === "") {
+    return 0;
+  }
+
+  const value = Number(field);
+
+  if (!Number.isFinite(value) || value <= 0) {
+    return 0;
+  }
+
+  return Math.min(MAX_DURATION_SECONDS, Math.round(value));
 }
 
 function serializeTune<Tune extends { fileSizeBytes: bigint }>(tune: Tune) {
