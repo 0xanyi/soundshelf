@@ -128,7 +128,7 @@ function StatCard({
           <span
             className={
               accent === "primary"
-                ? "bg-[linear-gradient(135deg,hsl(var(--accent)),hsl(var(--accent-2)))] bg-clip-text text-transparent"
+                ? "bg-[linear-gradient(135deg,hsl(var(--mood)),hsl(var(--mood-2)))] bg-clip-text text-transparent"
                 : "text-foreground"
             }
           >

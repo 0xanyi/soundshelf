@@ -100,7 +100,12 @@ describe("PlaylistBrowser", () => {
 
     expect(await screen.findAllByText("Old Track")).toHaveLength(2);
 
-    fireEvent.click(screen.getByRole("button", { name: /evening/i }));
+    // The browser renders both a mobile rail and a desktop sidebar at the
+    // same time in jsdom (no media-query gating); click the first match.
+    const eveningButtons = await screen.findAllByRole("button", {
+      name: /evening/i,
+    });
+    fireEvent.click(eveningButtons[0]);
 
     await screen.findByText("Loading tracks...");
 
@@ -170,8 +175,10 @@ describe("PlaylistBrowser", () => {
 
     render(<PlaylistBrowser />);
 
-    await screen.findByRole("button", { name: /evening/i });
-    fireEvent.click(screen.getByRole("button", { name: /evening/i }));
+    const eveningButtons = await screen.findAllByRole("button", {
+      name: /evening/i,
+    });
+    fireEvent.click(eveningButtons[0]);
 
     expect(await screen.findAllByText("New Track")).toHaveLength(2);
 

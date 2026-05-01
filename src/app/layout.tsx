@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { Instrument_Sans, JetBrains_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -8,20 +8,22 @@ export const metadata: Metadata = {
     "A modern home for curated audio playlists. Listen, browse, and immerse yourself in carefully prepared collections.",
 };
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const sans = Instrument_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const mono = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const displaySerif = Playfair_Display({
+const displaySerif = Fraunces({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -31,9 +33,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${displaySerif.variable} font-sans antialiased`}
+        className={`${sans.variable} ${mono.variable} ${displaySerif.variable} font-sans antialiased`}
       >
         {children}
       </body>
