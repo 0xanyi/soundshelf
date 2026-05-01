@@ -1,10 +1,12 @@
 "use client";
 
-import { Save, Trash2 } from "lucide-react";
+import { Music2, Save, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import type { SerializedAdminTune } from "@/lib/tunes/admin";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { formatBytes, formatDate, formatDuration } from "@/lib/format";
 
 type TuneManagementTableProps = {
   tunes: SerializedAdminTune[];
@@ -23,11 +25,18 @@ export function TuneManagementTable({ tunes }: TuneManagementTableProps) {
 
   if (tunes.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-foreground/20 bg-white p-8 text-center">
-        <h3 className="text-base font-semibold">No tunes uploaded</h3>
-        <p className="mt-2 text-sm text-muted">
-          Uploaded files will appear here as draft tunes.
-        </p>
+      <div className="panel-quiet grid place-items-center gap-3 p-10 text-center">
+        <span className="grid size-12 place-items-center rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--surface-2)/0.7)] text-[hsl(var(--accent))]">
+          <Music2 size={20} aria-hidden="true" />
+        </span>
+        <div>
+          <h3 className="display-heading text-lg font-semibold">
+            No tunes uploaded yet
+          </h3>
+          <p className="mt-1 text-sm text-[hsl(var(--muted))]">
+            Uploaded files will appear here as draft tunes.
+          </p>
+        </div>
       </div>
     );
   }
@@ -91,38 +100,40 @@ export function TuneManagementTable({ tunes }: TuneManagementTableProps) {
   return (
     <div className="space-y-3">
       {message ? (
-        <p className="rounded-md border border-foreground/10 bg-white px-3 py-2 text-sm text-muted">
+        <p className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface)/0.7)] px-3 py-2 text-sm text-[hsl(var(--muted))]">
           {message}
         </p>
       ) : null}
-      <div className="overflow-x-auto rounded-lg border border-foreground/10 bg-white shadow-sm">
-        <table className="min-w-full divide-y divide-foreground/10 text-left text-sm">
-          <thead className="bg-foreground/[0.03] text-xs uppercase tracking-wide text-muted">
-            <tr>
-              <th className="px-4 py-3 font-semibold">Tune</th>
-              <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 font-semibold">File</th>
-              <th className="px-4 py-3 font-semibold">Usage</th>
-              <th className="px-4 py-3 font-semibold">Created</th>
-              <th className="px-4 py-3 font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-foreground/10">
-            {tunes.map((tune) => {
-              const isPending = pendingTuneId === tune.id;
+      <div className="panel-quiet overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-[hsl(var(--border)/0.5)] text-left text-sm">
+            <thead className="text-[11px] uppercase tracking-[0.18em] text-[hsl(var(--muted))]">
+              <tr className="bg-[hsl(var(--surface-2)/0.4)]">
+                <th className="px-5 py-3 font-semibold">Tune</th>
+                <th className="px-5 py-3 font-semibold">Status</th>
+                <th className="px-5 py-3 font-semibold">File</th>
+                <th className="px-5 py-3 font-semibold">Usage</th>
+                <th className="px-5 py-3 font-semibold">Created</th>
+                <th className="px-5 py-3 font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[hsl(var(--border)/0.4)]">
+              {tunes.map((tune) => {
+                const isPending = pendingTuneId === tune.id;
 
-              return (
-                <TuneTableRow
-                  isPending={isPending}
-                  key={`${tune.id}:${tune.updatedAt}`}
-                  onDelete={deleteTune}
-                  onSave={saveTune}
-                  tune={tune}
-                />
-              );
-            })}
-          </tbody>
-        </table>
+                return (
+                  <TuneTableRow
+                    isPending={isPending}
+                    key={`${tune.id}:${tune.updatedAt}`}
+                    onDelete={deleteTune}
+                    onSave={saveTune}
+                    tune={tune}
+                  />
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -143,12 +154,12 @@ function TuneTableRow({
 
   return (
     <tr className="align-top">
-      <td className="min-w-72 px-4 py-4">
+      <td className="min-w-72 px-5 py-4">
         <label className="sr-only" htmlFor={`title-${tune.id}`}>
           Title
         </label>
         <input
-          className="w-full rounded-md border border-foreground/15 px-3 py-2 font-medium"
+          className="field font-medium"
           disabled={isPending}
           id={`title-${tune.id}`}
           onChange={(event) =>
@@ -160,7 +171,7 @@ function TuneTableRow({
           Description
         </label>
         <textarea
-          className="mt-2 min-h-20 w-full resize-y rounded-md border border-foreground/15 px-3 py-2 text-muted"
+          className="field mt-2 min-h-20 resize-y"
           disabled={isPending}
           id={`description-${tune.id}`}
           onChange={(event) =>
@@ -173,12 +184,12 @@ function TuneTableRow({
           value={draft.description}
         />
       </td>
-      <td className="px-4 py-4">
+      <td className="px-5 py-4">
         <label className="sr-only" htmlFor={`status-${tune.id}`}>
           Status
         </label>
         <select
-          className="rounded-md border border-foreground/15 bg-white px-3 py-2"
+          className="field"
           disabled={isPending}
           id={`status-${tune.id}`}
           onChange={(event) =>
@@ -192,25 +203,32 @@ function TuneTableRow({
           <option value="draft">Draft</option>
           <option value="active">Active</option>
         </select>
+        <StatusBadge
+          className="mt-2"
+          tone={draft.status === "active" ? "active" : "muted"}
+          label={draft.status === "active" ? "Active" : "Draft"}
+        />
       </td>
-      <td className="min-w-44 px-4 py-4 text-muted">
-        <div>{tune.mimeType}</div>
-        <div>{formatBytes(tune.fileSizeBytes)}</div>
-        <div>{formatDuration(tune.durationSeconds)}</div>
+      <td className="min-w-44 px-5 py-4 text-[hsl(var(--muted))]">
+        <div className="font-mono text-xs">{tune.mimeType}</div>
+        <div className="text-xs">{formatBytes(tune.fileSizeBytes)}</div>
+        <div className="font-mono text-xs">
+          {formatDuration(tune.durationSeconds, { fallback: "—:—" })}
+        </div>
       </td>
-      <td className="px-4 py-4">
-        <span className="rounded-full bg-foreground/[0.06] px-2.5 py-1 text-xs font-medium">
-          {tune.playlistItemCount}
+      <td className="px-5 py-4">
+        <span className="pill">
+          {tune.playlistItemCount} use{tune.playlistItemCount === 1 ? "" : "s"}
         </span>
       </td>
-      <td className="min-w-36 px-4 py-4 text-muted">
+      <td className="min-w-36 px-5 py-4 text-xs text-[hsl(var(--muted))]">
         {formatDate(tune.createdAt)}
       </td>
-      <td className="px-4 py-4">
+      <td className="px-5 py-4">
         <div className="flex gap-2">
           <button
             aria-label={`Save ${tune.title}`}
-            className="inline-flex size-9 items-center justify-center rounded-md border border-foreground/15 text-foreground transition hover:bg-foreground/5 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-ghost-icon"
             disabled={isPending}
             onClick={() => void onSave(tune.id, draft)}
             title="Save tune"
@@ -220,7 +238,7 @@ function TuneTableRow({
           </button>
           <button
             aria-label={`Delete ${tune.title}`}
-            className="inline-flex size-9 items-center justify-center rounded-md border border-foreground/15 text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-danger-icon"
             disabled={isPending || !tune.canDelete}
             onClick={() => void onDelete(tune)}
             title={tune.canDelete ? "Delete tune" : "Tune is used in a playlist"}
@@ -240,37 +258,6 @@ function createDraft(tune: SerializedAdminTune): TuneDraft {
     description: tune.description ?? "",
     status: tune.status,
   };
-}
-
-function formatBytes(value: string): string {
-  const bytes = Number(value);
-
-  if (!Number.isFinite(bytes)) {
-    return `${value} bytes`;
-  }
-
-  return new Intl.NumberFormat("en", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(bytes);
-}
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
-function formatDuration(seconds: number): string {
-  if (seconds <= 0) {
-    return "Duration unavailable";
-  }
-
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
 async function readError(response: Response): Promise<string> {

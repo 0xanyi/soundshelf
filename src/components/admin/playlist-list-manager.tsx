@@ -1,12 +1,14 @@
 "use client";
 
-import { ExternalLink, Plus, Trash2 } from "lucide-react";
+import { ExternalLink, ListMusic, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import type { SerializedAdminPlaylist } from "@/lib/playlists/admin";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { formatDate } from "@/lib/format";
 
 type PlaylistListManagerProps = {
   playlists: SerializedAdminPlaylist[];
@@ -104,43 +106,55 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <form
-        className="rounded-lg border border-foreground/10 bg-white p-5 shadow-sm"
+        className="panel-quiet p-5 sm:p-6"
         onSubmit={(event) => void createPlaylist(event)}
       >
-        <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
-          <div>
-            <label className="text-sm font-medium" htmlFor="playlist-title">
+        <p className="kicker">New playlist</p>
+        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
+          <div className="space-y-2">
+            <label
+              className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
+              htmlFor="playlist-title"
+            >
               Title
             </label>
             <input
-              className="mt-1 w-full rounded-md border border-foreground/15 px-3 py-2"
+              className="field"
               disabled={isCreating}
               id="playlist-title"
               onChange={(event) => setTitle(event.target.value)}
+              placeholder="Morning calm"
               required
               value={title}
             />
           </div>
-          <div>
-            <label className="text-sm font-medium" htmlFor="playlist-description">
+          <div className="space-y-2">
+            <label
+              className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
+              htmlFor="playlist-description"
+            >
               Description
             </label>
             <input
-              className="mt-1 w-full rounded-md border border-foreground/15 px-3 py-2"
+              className="field"
               disabled={isCreating}
               id="playlist-description"
               onChange={(event) => setDescription(event.target.value)}
+              placeholder="Optional"
               value={description}
             />
           </div>
-          <div>
-            <label className="text-sm font-medium" htmlFor="playlist-status">
+          <div className="space-y-2">
+            <label
+              className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
+              htmlFor="playlist-status"
+            >
               Status
             </label>
             <select
-              className="mt-1 w-full rounded-md border border-foreground/15 bg-white px-3 py-2"
+              className="field"
               disabled={isCreating}
               id="playlist-status"
               onChange={(event) =>
@@ -152,11 +166,7 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
               <option value="published">Published</option>
             </select>
           </div>
-          <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-foreground px-4 text-sm font-medium text-white transition hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={isCreating}
-            type="submit"
-          >
+          <button className="btn-primary" disabled={isCreating} type="submit">
             <Plus aria-hidden="true" size={16} />
             Create
           </button>
@@ -164,110 +174,117 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
       </form>
 
       {message ? (
-        <p className="rounded-md border border-foreground/10 bg-white px-3 py-2 text-sm text-muted">
+        <p className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface)/0.7)] px-3 py-2 text-sm text-[hsl(var(--muted))]">
           {message}
         </p>
       ) : null}
 
       {playlists.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-foreground/20 bg-white p-8 text-center">
-          <h3 className="text-base font-semibold">No playlists</h3>
-          <p className="mt-2 text-sm text-muted">
-            Create a playlist to start grouping active tunes.
-          </p>
+        <div className="panel-quiet grid place-items-center gap-3 p-10 text-center">
+          <span className="grid size-12 place-items-center rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--surface-2)/0.7)] text-[hsl(var(--accent))]">
+            <ListMusic size={20} aria-hidden="true" />
+          </span>
+          <div>
+            <h3 className="display-heading text-lg font-semibold">
+              No playlists yet
+            </h3>
+            <p className="mt-1 text-sm text-[hsl(var(--muted))]">
+              Create a playlist to start grouping active tunes.
+            </p>
+          </div>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-foreground/10 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-foreground/10 text-left text-sm">
-            <thead className="bg-foreground/[0.03] text-xs uppercase tracking-wide text-muted">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Playlist</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Items</th>
-                <th className="px-4 py-3 font-semibold">Created</th>
-                <th className="px-4 py-3 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-foreground/10">
-              {playlists.map((playlist) => {
-                const isPending = pendingId === playlist.id;
+        <div className="panel-quiet overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-[hsl(var(--border)/0.5)] text-left text-sm">
+              <thead className="text-[11px] uppercase tracking-[0.18em] text-[hsl(var(--muted))]">
+                <tr className="bg-[hsl(var(--surface-2)/0.4)]">
+                  <th className="px-5 py-3 font-semibold">Playlist</th>
+                  <th className="px-5 py-3 font-semibold">Status</th>
+                  <th className="px-5 py-3 font-semibold">Items</th>
+                  <th className="px-5 py-3 font-semibold">Created</th>
+                  <th className="px-5 py-3 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[hsl(var(--border)/0.4)]">
+                {playlists.map((playlist) => {
+                  const isPending = pendingId === playlist.id;
 
-                return (
-                  <tr className="align-top" key={playlist.id}>
-                    <td className="min-w-72 px-4 py-4">
-                      <div className="font-medium">{playlist.title}</div>
-                      {playlist.description ? (
-                        <div className="mt-1 max-w-md text-muted">
-                          {playlist.description}
-                        </div>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-4">
-                      <label className="sr-only" htmlFor={`status-${playlist.id}`}>
-                        Status
-                      </label>
-                      <select
-                        className="rounded-md border border-foreground/15 bg-white px-3 py-2"
-                        disabled={isPending}
-                        id={`status-${playlist.id}`}
-                        onChange={(event) =>
-                          void updateStatus(
-                            playlist.id,
-                            event.target.value as "draft" | "published",
-                          )
-                        }
-                        value={playlist.status}
-                      >
-                        <option value="draft">Draft</option>
-                        <option value="published">Published</option>
-                      </select>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className="rounded-full bg-foreground/[0.06] px-2.5 py-1 text-xs font-medium">
-                        {playlist.itemCount}
-                      </span>
-                    </td>
-                    <td className="min-w-36 px-4 py-4 text-muted">
-                      {formatDate(playlist.createdAt)}
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex gap-2">
-                        <Link
-                          aria-label={`Edit ${playlist.title}`}
-                          className="inline-flex size-9 items-center justify-center rounded-md border border-foreground/15 text-foreground transition hover:bg-foreground/5"
-                          href={`/admin/playlists/${playlist.id}` as Route}
-                          title="Edit playlist"
-                        >
-                          <ExternalLink aria-hidden="true" size={16} />
-                        </Link>
-                        <button
-                          aria-label={`Delete ${playlist.title}`}
-                          className="inline-flex size-9 items-center justify-center rounded-md border border-foreground/15 text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  return (
+                    <tr className="align-top" key={playlist.id}>
+                      <td className="min-w-72 px-5 py-4">
+                        <div className="font-medium">{playlist.title}</div>
+                        {playlist.description ? (
+                          <div className="mt-1 max-w-md text-sm text-[hsl(var(--muted))]">
+                            {playlist.description}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td className="px-5 py-4">
+                        <label className="sr-only" htmlFor={`status-${playlist.id}`}>
+                          Status
+                        </label>
+                        <select
+                          className="field"
                           disabled={isPending}
-                          onClick={() => void deletePlaylist(playlist.id)}
-                          title="Delete playlist"
-                          type="button"
+                          id={`status-${playlist.id}`}
+                          onChange={(event) =>
+                            void updateStatus(
+                              playlist.id,
+                              event.target.value as "draft" | "published",
+                            )
+                          }
+                          value={playlist.status}
                         >
-                          <Trash2 aria-hidden="true" size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                          <option value="draft">Draft</option>
+                          <option value="published">Published</option>
+                        </select>
+                        <StatusBadge
+                          className="mt-2"
+                          tone={playlist.status === "published" ? "active" : "muted"}
+                          label={
+                            playlist.status === "published" ? "Published" : "Draft"
+                          }
+                        />
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="pill">{playlist.itemCount}</span>
+                      </td>
+                      <td className="min-w-36 px-5 py-4 text-xs text-[hsl(var(--muted))]">
+                        {formatDate(playlist.createdAt)}
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex gap-2">
+                          <Link
+                            aria-label={`Edit ${playlist.title}`}
+                            className="btn-ghost-icon"
+                            href={`/admin/playlists/${playlist.id}` as Route}
+                            title="Edit playlist"
+                          >
+                            <ExternalLink aria-hidden="true" size={16} />
+                          </Link>
+                          <button
+                            aria-label={`Delete ${playlist.title}`}
+                            className="btn-danger-icon"
+                            disabled={isPending}
+                            onClick={() => void deletePlaylist(playlist.id)}
+                            title="Delete playlist"
+                            type="button"
+                          >
+                            <Trash2 aria-hidden="true" size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
   );
-}
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
 }
 
 async function readError(response: Response): Promise<string> {

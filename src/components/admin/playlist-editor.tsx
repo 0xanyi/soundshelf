@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowLeft, ArrowUp, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, ListMusic, Plus, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
@@ -10,6 +10,7 @@ import type {
   SerializedAdminPlaylist,
   SerializedAdminPlaylistItem,
 } from "@/lib/playlists/admin";
+import { formatDuration } from "@/lib/format";
 
 type ActiveTuneOption = {
   id: string;
@@ -215,9 +216,9 @@ export function PlaylistEditor({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <Link
-        className="inline-flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground"
+        className="inline-flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted))] transition hover:text-foreground"
         href={"/admin/playlists" as Route}
       >
         <ArrowLeft aria-hidden="true" size={16} />
@@ -225,16 +226,20 @@ export function PlaylistEditor({
       </Link>
 
       <form
-        className="rounded-lg border border-foreground/10 bg-white p-5 shadow-sm"
+        className="panel-quiet p-5 sm:p-6"
         onSubmit={(event) => void savePlaylist(event)}
       >
-        <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
-          <div>
-            <label className="text-sm font-medium" htmlFor="playlist-title">
+        <p className="kicker">Details</p>
+        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
+          <div className="space-y-2">
+            <label
+              className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
+              htmlFor="playlist-title"
+            >
               Title
             </label>
             <input
-              className="mt-1 w-full rounded-md border border-foreground/15 px-3 py-2"
+              className="field"
               disabled={pendingAction === "playlist"}
               id="playlist-title"
               onChange={(event) =>
@@ -244,12 +249,15 @@ export function PlaylistEditor({
               value={draft.title}
             />
           </div>
-          <div>
-            <label className="text-sm font-medium" htmlFor="playlist-description">
+          <div className="space-y-2">
+            <label
+              className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
+              htmlFor="playlist-description"
+            >
               Description
             </label>
             <input
-              className="mt-1 w-full rounded-md border border-foreground/15 px-3 py-2"
+              className="field"
               disabled={pendingAction === "playlist"}
               id="playlist-description"
               onChange={(event) =>
@@ -261,12 +269,15 @@ export function PlaylistEditor({
               value={draft.description}
             />
           </div>
-          <div>
-            <label className="text-sm font-medium" htmlFor="playlist-status">
+          <div className="space-y-2">
+            <label
+              className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
+              htmlFor="playlist-status"
+            >
               Status
             </label>
             <select
-              className="mt-1 w-full rounded-md border border-foreground/15 bg-white px-3 py-2"
+              className="field"
               disabled={pendingAction === "playlist"}
               id="playlist-status"
               onChange={(event) =>
@@ -282,7 +293,7 @@ export function PlaylistEditor({
             </select>
           </div>
           <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-foreground px-4 text-sm font-medium text-white transition hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-primary"
             disabled={pendingAction === "playlist"}
             type="submit"
           >
@@ -293,22 +304,26 @@ export function PlaylistEditor({
       </form>
 
       {message ? (
-        <p className="rounded-md border border-foreground/10 bg-white px-3 py-2 text-sm text-muted">
+        <p className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface)/0.7)] px-3 py-2 text-sm text-[hsl(var(--muted))]">
           {message}
         </p>
       ) : null}
 
       <form
-        className="rounded-lg border border-foreground/10 bg-white p-5 shadow-sm"
+        className="panel-quiet p-5 sm:p-6"
         onSubmit={(event) => void addTune(event)}
       >
-        <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div>
-            <label className="text-sm font-medium" htmlFor="add-tune">
-              Add active tune
+        <p className="kicker">Add a tune</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div className="space-y-2">
+            <label
+              className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
+              htmlFor="add-tune"
+            >
+              Active tune
             </label>
             <select
-              className="mt-1 w-full rounded-md border border-foreground/15 bg-white px-3 py-2"
+              className="field"
               disabled={pendingAction === "add" || availableTunes.length === 0}
               id="add-tune"
               onChange={(event) => setSelectedTuneId(event.target.value)}
@@ -321,13 +336,13 @@ export function PlaylistEditor({
               </option>
               {availableTunes.map((tune) => (
                 <option key={tune.id} value={tune.id}>
-                  {tune.title} ({formatDuration(tune.durationSeconds)})
+                  {tune.title} ({formatDuration(tune.durationSeconds, { fallback: "—:—" })})
                 </option>
               ))}
             </select>
           </div>
           <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-foreground px-4 text-sm font-medium text-white transition hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-primary"
             disabled={pendingAction === "add" || availableTunes.length === 0}
             type="submit"
           >
@@ -338,88 +353,103 @@ export function PlaylistEditor({
       </form>
 
       <div className="space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold">Items</h3>
-          <p className="mt-1 text-sm text-muted">
-            {currentItems.length} tune{currentItems.length === 1 ? "" : "s"}
-          </p>
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h3 className="display-heading text-xl font-semibold">Items</h3>
+            <p className="mt-1 text-sm text-[hsl(var(--muted))]">
+              {currentItems.length} tune{currentItems.length === 1 ? "" : "s"}
+            </p>
+          </div>
         </div>
 
         {currentItems.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-foreground/20 bg-white p-8 text-center">
-            <h3 className="text-base font-semibold">No tunes in this playlist</h3>
-            <p className="mt-2 text-sm text-muted">
-              Add active tunes from the selector above.
-            </p>
+          <div className="panel-quiet grid place-items-center gap-3 p-10 text-center">
+            <span className="grid size-12 place-items-center rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--surface-2)/0.7)] text-[hsl(var(--accent))]">
+              <ListMusic size={20} aria-hidden="true" />
+            </span>
+            <div>
+              <h3 className="display-heading text-lg font-semibold">
+                No tunes in this playlist
+              </h3>
+              <p className="mt-1 text-sm text-[hsl(var(--muted))]">
+                Add active tunes from the selector above.
+              </p>
+            </div>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-foreground/10 bg-white shadow-sm">
-            <table className="min-w-full divide-y divide-foreground/10 text-left text-sm">
-              <thead className="bg-foreground/[0.03] text-xs uppercase tracking-wide text-muted">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Position</th>
-                  <th className="px-4 py-3 font-semibold">Tune</th>
-                  <th className="px-4 py-3 font-semibold">Duration</th>
-                  <th className="px-4 py-3 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-foreground/10">
-                {currentItems.map((item, index) => {
-                  const isPending = pendingAction === item.id;
+          <div className="panel-quiet overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-[hsl(var(--border)/0.5)] text-left text-sm">
+                <thead className="text-[11px] uppercase tracking-[0.18em] text-[hsl(var(--muted))]">
+                  <tr className="bg-[hsl(var(--surface-2)/0.4)]">
+                    <th className="px-5 py-3 font-semibold">#</th>
+                    <th className="px-5 py-3 font-semibold">Tune</th>
+                    <th className="px-5 py-3 font-semibold">Duration</th>
+                    <th className="px-5 py-3 font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[hsl(var(--border)/0.4)]">
+                  {currentItems.map((item, index) => {
+                    const isPending = pendingAction === item.id;
 
-                  return (
-                    <tr className="align-top" key={item.id}>
-                      <td className="px-4 py-4 text-muted">{index + 1}</td>
-                      <td className="min-w-72 px-4 py-4">
-                        <div className="font-medium">{item.tune.title}</div>
-                        {item.tune.description ? (
-                          <div className="mt-1 max-w-md text-muted">
-                            {item.tune.description}
+                    return (
+                      <tr className="align-top" key={item.id}>
+                        <td className="px-5 py-4 font-mono text-xs text-[hsl(var(--muted))]">
+                          {(index + 1).toString().padStart(2, "0")}
+                        </td>
+                        <td className="min-w-72 px-5 py-4">
+                          <div className="font-medium">{item.tune.title}</div>
+                          {item.tune.description ? (
+                            <div className="mt-1 max-w-md text-sm text-[hsl(var(--muted))]">
+                              {item.tune.description}
+                            </div>
+                          ) : null}
+                        </td>
+                        <td className="px-5 py-4 font-mono text-xs text-[hsl(var(--muted))]">
+                          {formatDuration(item.tune.durationSeconds, { fallback: "—:—" })}
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex gap-2">
+                            <button
+                              aria-label={`Move ${item.tune.title} up`}
+                              className="btn-ghost-icon"
+                              disabled={isPending || index === 0}
+                              onClick={() => void moveItem(item.id, index - 1)}
+                              title="Move up"
+                              type="button"
+                            >
+                              <ArrowUp aria-hidden="true" size={16} />
+                            </button>
+                            <button
+                              aria-label={`Move ${item.tune.title} down`}
+                              className="btn-ghost-icon"
+                              disabled={
+                                isPending || index === currentItems.length - 1
+                              }
+                              onClick={() => void moveItem(item.id, index + 1)}
+                              title="Move down"
+                              type="button"
+                            >
+                              <ArrowDown aria-hidden="true" size={16} />
+                            </button>
+                            <button
+                              aria-label={`Remove ${item.tune.title}`}
+                              className="btn-danger-icon"
+                              disabled={isPending}
+                              onClick={() => void removeItem(item.id)}
+                              title="Remove tune"
+                              type="button"
+                            >
+                              <Trash2 aria-hidden="true" size={16} />
+                            </button>
                           </div>
-                        ) : null}
-                      </td>
-                      <td className="px-4 py-4 text-muted">
-                        {formatDuration(item.tune.durationSeconds)}
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex gap-2">
-                          <button
-                            aria-label={`Move ${item.tune.title} up`}
-                            className="inline-flex size-9 items-center justify-center rounded-md border border-foreground/15 text-foreground transition hover:bg-foreground/5 disabled:cursor-not-allowed disabled:opacity-50"
-                            disabled={isPending || index === 0}
-                            onClick={() => void moveItem(item.id, index - 1)}
-                            title="Move up"
-                            type="button"
-                          >
-                            <ArrowUp aria-hidden="true" size={16} />
-                          </button>
-                          <button
-                            aria-label={`Move ${item.tune.title} down`}
-                            className="inline-flex size-9 items-center justify-center rounded-md border border-foreground/15 text-foreground transition hover:bg-foreground/5 disabled:cursor-not-allowed disabled:opacity-50"
-                            disabled={isPending || index === currentItems.length - 1}
-                            onClick={() => void moveItem(item.id, index + 1)}
-                            title="Move down"
-                            type="button"
-                          >
-                            <ArrowDown aria-hidden="true" size={16} />
-                          </button>
-                          <button
-                            aria-label={`Remove ${item.tune.title}`}
-                            className="inline-flex size-9 items-center justify-center rounded-md border border-foreground/15 text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                            disabled={isPending}
-                            onClick={() => void removeItem(item.id)}
-                            title="Remove tune"
-                            type="button"
-                          >
-                            <Trash2 aria-hidden="true" size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
@@ -462,17 +492,6 @@ function applyServerItemPositions(
       position: positionById.get(item.id) ?? item.position,
     }))
     .sort((left, right) => left.position - right.position);
-}
-
-function formatDuration(seconds: number): string {
-  if (seconds <= 0) {
-    return "Duration unavailable";
-  }
-
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
 async function readError(response: Response): Promise<string> {

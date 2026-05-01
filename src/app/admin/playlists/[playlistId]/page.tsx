@@ -59,15 +59,15 @@ export default async function AdminPlaylistEditorPage({
 
   return (
     <section className="space-y-8">
-      <div>
-        <p className="mb-3 text-sm font-medium uppercase tracking-wide text-accent">
-          Playlist
-        </p>
-        <h2 className="text-3xl font-semibold">{playlist.title}</h2>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
+      <header className="space-y-3">
+        <p className="kicker">Playlist</p>
+        <h2 className="display-heading text-3xl font-semibold sm:text-4xl">
+          {playlist.title}
+        </h2>
+        <p className="max-w-2xl text-sm leading-6 text-[hsl(var(--muted))]">
           Edit playlist details, add active tunes, and adjust playback order.
         </p>
-      </div>
+      </header>
 
       <PlaylistEditor
         activeTunes={activeTunes}

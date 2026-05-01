@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { useState, type FormEvent } from "react";
+import { ArrowRight, Loader2 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
 
@@ -46,15 +47,16 @@ export function LoginForm() {
   return (
     <form className="space-y-5" onSubmit={handleSubmit}>
       <div className="space-y-2">
-        <label className="block text-sm font-medium" htmlFor="email">
+        <label className="block text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]" htmlFor="email">
           Email
         </label>
         <input
           autoComplete="email"
-          className="w-full rounded-md border border-foreground/15 bg-white px-3 py-2 text-base outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+          className="field"
           id="email"
           name="email"
           onChange={(event) => setEmail(event.target.value)}
+          placeholder="you@studio.com"
           required
           type="email"
           value={email}
@@ -62,15 +64,16 @@ export function LoginForm() {
       </div>
 
       <div className="space-y-2">
-        <label className="block text-sm font-medium" htmlFor="password">
+        <label className="block text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]" htmlFor="password">
           Password
         </label>
         <input
           autoComplete="current-password"
-          className="w-full rounded-md border border-foreground/15 bg-white px-3 py-2 text-base outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+          className="field"
           id="password"
           name="password"
           onChange={(event) => setPassword(event.target.value)}
+          placeholder="••••••••"
           required
           type="password"
           value={password}
@@ -78,17 +81,27 @@ export function LoginForm() {
       </div>
 
       {errorMessage ? (
-        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-xl border border-[hsl(var(--danger)/0.5)] bg-[hsl(var(--danger)/0.12)] px-3 py-2 text-sm text-[hsl(var(--danger))]">
           {errorMessage}
         </p>
       ) : null}
 
       <button
-        className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-65"
+        className="btn-primary w-full"
         disabled={isSubmitting}
         type="submit"
       >
-        {isSubmitting ? "Signing in..." : "Sign in"}
+        {isSubmitting ? (
+          <>
+            <Loader2 size={16} aria-hidden="true" className="animate-spin" />
+            Signing in...
+          </>
+        ) : (
+          <>
+            Sign in
+            <ArrowRight size={16} aria-hidden="true" />
+          </>
+        )}
       </button>
     </form>
   );

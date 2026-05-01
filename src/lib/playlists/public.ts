@@ -72,26 +72,33 @@ export async function serializePublicPlaylistDetail(
   playlist: PublicPlaylistDetailRecord,
   signAudioUrl: SignAudioUrl,
 ): Promise<SerializedPublicPlaylistDetail | null> {
+  const orderedActiveItems = [...playlist.items]
+    .sort(comparePlaylistItems)
+    .filter((item) => item.tune.status === "active");
+
+  const signedResults = await Promise.allSettled(
+    orderedActiveItems.map((item) => signAudioUrl(item.tune.r2ObjectKey)),
+  );
+
   const tracks: SerializedPublicTrack[] = [];
 
-  for (const item of [...playlist.items].sort(comparePlaylistItems)) {
-    if (item.tune.status !== "active") {
-      continue;
+  orderedActiveItems.forEach((item, index) => {
+    const result = signedResults[index];
+
+    if (!result || result.status !== "fulfilled") {
+      // Keep public responses safe when a signed URL cannot be created.
+      return;
     }
 
-    try {
-      tracks.push({
-        id: item.tune.id,
-        playlistItemId: item.id,
-        title: item.tune.title,
-        description: item.tune.description,
-        durationSeconds: item.tune.durationSeconds,
-        audioUrl: await signAudioUrl(item.tune.r2ObjectKey),
-      });
-    } catch {
-      // Keep public responses safe when a signed URL cannot be created.
-    }
-  }
+    tracks.push({
+      id: item.tune.id,
+      playlistItemId: item.id,
+      title: item.tune.title,
+      description: item.tune.description,
+      durationSeconds: item.tune.durationSeconds,
+      audioUrl: result.value,
+    });
+  });
 
   if (tracks.length === 0) {
     return null;

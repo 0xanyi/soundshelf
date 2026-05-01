@@ -3,15 +3,40 @@
 @theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
+  --color-surface: hsl(var(--surface));
+  --color-surface-2: hsl(var(--surface-2));
+  --color-border: hsl(var(--border));
   --color-muted: hsl(var(--muted));
   --color-accent: hsl(var(--accent));
+  --color-accent-2: hsl(var(--accent-2));
+  --color-danger: hsl(var(--danger));
 }
 
 :root {
-  --background: 42 30% 97%;
-  --foreground: 218 20% 16%;
-  --muted: 220 9% 42%;
-  --accent: 178 52% 28%;
+  /* Dark-first premium audio palette */
+  --background: 228 28% 7%;
+  --foreground: 210 28% 96%;
+  --surface: 228 24% 10%;
+  --surface-2: 226 22% 13%;
+  --border: 221 18% 23%;
+  --muted: 220 10% 68%;
+  --accent: 188 85% 58%;
+  --accent-2: 262 72% 68%;
+  --danger: 0 72% 60%;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --background: 220 35% 97%;
+    --foreground: 228 24% 12%;
+    --surface: 0 0% 100%;
+    --surface-2: 220 24% 95%;
+    --border: 220 18% 85%;
+    --muted: 222 10% 42%;
+    --accent: 191 72% 34%;
+    --accent-2: 258 55% 52%;
+    --danger: 0 68% 52%;
+  }
 }
 
 * {
@@ -19,12 +44,144 @@
 }
 
 html {
-  color-scheme: light;
+  color-scheme: dark light;
 }
 
 body {
   min-height: 100vh;
   margin: 0;
-  background: hsl(var(--background));
+  background:
+    radial-gradient(
+      circle at 12% 0%,
+      hsl(var(--accent) / 0.18),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 88% 6%,
+      hsl(var(--accent-2) / 0.16),
+      transparent 26%
+    ),
+    radial-gradient(
+      circle at 50% 100%,
+      hsl(var(--accent-2) / 0.08),
+      transparent 40%
+    ),
+    hsl(var(--background));
+  background-attachment: fixed;
   color: hsl(var(--foreground));
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Native form control colour */
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+/* Range input thumb tuning so the custom scrubber feels luxe */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  background: transparent;
+  height: 8px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: hsl(var(--foreground));
+  border: 2px solid hsl(var(--accent));
+  box-shadow: 0 4px 16px hsl(var(--accent) / 0.45);
+  margin-top: -4px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: hsl(var(--foreground));
+  border: 2px solid hsl(var(--accent));
+  box-shadow: 0 4px 16px hsl(var(--accent) / 0.45);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-track {
+  background: transparent;
+  height: 8px;
+}
+
+::selection {
+  background: hsl(var(--accent) / 0.4);
+  color: hsl(var(--foreground));
+}
+
+/* Reusable component-level utilities */
+@layer components {
+  .panel {
+    @apply rounded-3xl border border-[hsl(var(--border)/0.7)] bg-[hsl(var(--surface)/0.85)] shadow-[0_24px_80px_-32px_rgba(0,0,0,0.65)] backdrop-blur-xl;
+  }
+
+  .panel-quiet {
+    @apply rounded-2xl border border-[hsl(var(--border)/0.6)] bg-[hsl(var(--surface-2)/0.7)] shadow-[0_12px_40px_-28px_rgba(0,0,0,0.45)];
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2)/0.8)] px-3.5 py-2.5 text-sm text-foreground outline-none transition placeholder:text-[hsl(var(--muted)/0.7)] focus:border-[hsl(var(--accent))] focus:ring-4 focus:ring-[hsl(var(--accent)/0.18)] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-primary {
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,hsl(var(--accent)),hsl(var(--accent-2)))] px-4 text-sm font-semibold text-slate-950 shadow-[0_12px_32px_-12px_hsl(var(--accent)/0.55)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-[hsl(var(--accent)/0.25)] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2)/0.6)] px-3.5 text-sm font-medium text-foreground transition hover:bg-[hsl(var(--surface-2))] focus:outline-none focus:ring-4 focus:ring-[hsl(var(--accent)/0.18)] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-ghost-icon {
+    @apply inline-flex size-10 items-center justify-center rounded-xl border border-[hsl(var(--border)/0.6)] bg-transparent text-foreground transition hover:bg-[hsl(var(--surface-2)/0.8)] focus:outline-none focus:ring-4 focus:ring-[hsl(var(--accent)/0.18)] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-danger-icon {
+    @apply inline-flex size-10 items-center justify-center rounded-xl border border-[hsl(var(--border)/0.6)] bg-transparent text-[hsl(var(--danger))] transition hover:bg-[hsl(var(--danger)/0.12)] focus:outline-none focus:ring-4 focus:ring-[hsl(var(--danger)/0.2)] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--surface-2)/0.6)] px-2.5 py-0.5 text-xs font-medium text-[hsl(var(--muted))];
+  }
+
+  .kicker {
+    @apply text-[11px] font-medium uppercase tracking-[0.28em] text-[hsl(var(--accent))];
+  }
+
+  .display-heading {
+    font-family: var(--font-display), Georgia, serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Reduced motion respect */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }

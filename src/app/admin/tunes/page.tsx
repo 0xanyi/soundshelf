@@ -18,24 +18,24 @@ export default async function AdminTunesPage() {
 
   return (
     <section className="space-y-8">
-      <div>
-        <p className="mb-3 text-sm font-medium uppercase tracking-wide text-accent">
-          Tunes
-        </p>
-        <h2 className="text-3xl font-semibold">Tune management</h2>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
+      <header className="space-y-3">
+        <p className="kicker">Tunes</p>
+        <h2 className="display-heading text-3xl font-semibold sm:text-4xl">
+          Tune management
+        </h2>
+        <p className="max-w-2xl text-sm leading-6 text-[hsl(var(--muted))]">
           Upload audio, keep drafts tidy, and publish active tunes for playlist
           use.
         </p>
-      </div>
+      </header>
 
       <TuneUploadForm />
 
       <div className="space-y-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h3 className="text-lg font-semibold">Library</h3>
-            <p className="mt-1 text-sm text-muted">
+            <h3 className="display-heading text-xl font-semibold">Library</h3>
+            <p className="mt-1 text-sm text-[hsl(var(--muted))]">
               {serializedTunes.length} tune
               {serializedTunes.length === 1 ? "" : "s"}
             </p>

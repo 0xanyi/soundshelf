@@ -17,22 +17,22 @@ export default async function AdminPlaylistsPage() {
 
   return (
     <section className="space-y-8">
-      <div>
-        <p className="mb-3 text-sm font-medium uppercase tracking-wide text-accent">
-          Playlists
-        </p>
-        <h2 className="text-3xl font-semibold">Playlist management</h2>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
+      <header className="space-y-3">
+        <p className="kicker">Playlists</p>
+        <h2 className="display-heading text-3xl font-semibold sm:text-4xl">
+          Playlist management
+        </h2>
+        <p className="max-w-2xl text-sm leading-6 text-[hsl(var(--muted))]">
           Create ordered sets of active tunes and publish them when they are
           ready for listeners.
         </p>
-      </div>
+      </header>
 
       <div className="space-y-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h3 className="text-lg font-semibold">Library</h3>
-            <p className="mt-1 text-sm text-muted">
+            <h3 className="display-heading text-xl font-semibold">Library</h3>
+            <p className="mt-1 text-sm text-[hsl(var(--muted))]">
               {serializedPlaylists.length} playlist
               {serializedPlaylists.length === 1 ? "" : "s"}
             </p>
