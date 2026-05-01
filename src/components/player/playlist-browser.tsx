@@ -226,7 +226,7 @@ export function PlaylistBrowser() {
 
           <section>
             <div className="mb-4">
-              <p className="kicker">Library</p>
+              <p className="kicker">Curations</p>
             </div>
             <PlaylistCardLibrary
               error={listError}

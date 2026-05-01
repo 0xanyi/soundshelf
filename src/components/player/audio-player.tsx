@@ -79,6 +79,7 @@ export function AudioPlayer({
       ? Math.min(100, (currentTime / displayDuration) * 100)
       : 0;
   const isMuted = volume === 0;
+  const hasQueuePanel = Boolean(isQueueOpen && queuePanel);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -258,161 +259,172 @@ export function AudioPlayer({
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
       />
 
-      <div className="relative grid gap-7 p-5 sm:p-7 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:items-center md:gap-10 md:p-9 lg:p-11">
-        <Vinyl isPlaying={isPlaying} />
+      <div
+        className="relative grid min-w-0 transition-[grid-template-columns] duration-300 xl:data-[queue-open=true]:grid-cols-[minmax(0,1fr)_minmax(300px,340px)]"
+        data-queue-open={hasQueuePanel}
+      >
+        <div className="relative grid min-w-0 gap-7 p-5 sm:p-7 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:items-center md:gap-10 md:p-9 lg:p-11">
+          <Vinyl isPlaying={isPlaying} />
 
-        <div className="flex min-w-0 flex-col gap-6">
-          <div className="flex min-w-0 flex-col gap-3">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.32em]">
-              <EqualizerIcon
-                isPlaying={isPlaying}
-                className="h-3 text-[hsl(var(--mood))]"
-              />
-              <span className="font-mono text-[hsl(var(--mood))]">
-                {isPlaying ? "Now Playing" : "Paused"}
-              </span>
-              {playlistTitle ? (
-                <>
-                  <span className="text-[hsl(var(--border))]" aria-hidden="true">
-                    /
-                  </span>
-                  <span className="truncate font-mono text-[hsl(var(--muted))] normal-case tracking-[0.18em]">
-                    {playlistTitle}
-                  </span>
-                </>
+          <div className="flex min-w-0 flex-col gap-6">
+            <div className="flex min-w-0 flex-col gap-3">
+              <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.32em]">
+                <EqualizerIcon
+                  isPlaying={isPlaying}
+                  className="h-3 text-[hsl(var(--mood))]"
+                />
+                <span className="font-mono text-[hsl(var(--mood))]">
+                  {isPlaying ? "Now Playing" : "Paused"}
+                </span>
+                {playlistTitle ? (
+                  <>
+                    <span className="text-[hsl(var(--border))]" aria-hidden="true">
+                      /
+                    </span>
+                    <span className="truncate font-mono text-[hsl(var(--muted))] normal-case tracking-[0.18em]">
+                      {playlistTitle}
+                    </span>
+                  </>
+                ) : null}
+              </div>
+
+              <h2
+                className="max-w-xl text-balance font-sans text-xl font-normal leading-tight text-[hsl(var(--foreground)/0.92)] sm:text-2xl md:text-[28px]"
+                key={currentTrack.id}
+              >
+                <span className="rise-in inline-block">{currentTrack.title}</span>
+              </h2>
+
+              {currentTrack.description ? (
+                <p className="line-clamp-2 max-w-xl text-[13.5px] leading-6 text-[hsl(var(--muted))]">
+                  {currentTrack.description}
+                </p>
               ) : null}
             </div>
 
-            <h2
-              className="max-w-xl text-balance font-sans text-xl font-normal leading-tight text-[hsl(var(--foreground)/0.92)] sm:text-2xl md:text-[28px]"
-              key={currentTrack.id}
-            >
-              <span className="rise-in inline-block">{currentTrack.title}</span>
-            </h2>
+            {/* Scrubber */}
+            <div className="grid gap-2">
+              <div className="group relative h-1.5 rounded-full bg-[hsl(var(--surface-3))]">
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-y-0 left-0 rounded-full bg-[linear-gradient(90deg,hsl(var(--mood)),hsl(var(--mood-2)))]"
+                  style={{
+                    width: `${progress}%`,
+                    boxShadow: "0 0 24px hsl(var(--mood) / 0.55)",
+                  }}
+                />
+                {/* Thumb — visible only on hover/focus to keep the line clean */}
+                <div
+                  aria-hidden="true"
+                  className="absolute -top-[5px] size-3.5 -translate-x-1/2 rounded-full bg-[hsl(var(--foreground))] opacity-0 shadow-[0_0_0_4px_hsl(var(--mood)/0.2)] ring-2 ring-[hsl(var(--mood))] transition group-hover:opacity-100"
+                  style={{ left: `${progress}%` }}
+                />
+                <input
+                  aria-label="Seek"
+                  className="absolute inset-0 h-1.5 w-full cursor-pointer appearance-none bg-transparent"
+                  max={Math.max(displayDuration, 1)}
+                  min={0}
+                  step={1}
+                  type="range"
+                  value={Math.min(currentTime, Math.max(displayDuration, 1))}
+                  onChange={(event) => {
+                    const nextTime = Number(event.target.value);
+                    const audio = audioRef.current;
 
-            {currentTrack.description ? (
-              <p className="line-clamp-2 max-w-xl text-[13.5px] leading-6 text-[hsl(var(--muted))]">
-                {currentTrack.description}
-              </p>
+                    if (audio) {
+                      audio.currentTime = nextTime;
+                    }
+
+                    setCurrentTime(nextTime);
+                  }}
+                />
+              </div>
+              <div className="flex justify-between font-mono text-[11px] tabular-nums text-[hsl(var(--muted))]">
+                <span>{formatDuration(currentTime)}</span>
+                <span>−{formatDuration(Math.max(displayDuration - currentTime, 0))}</span>
+              </div>
+            </div>
+
+            {loadError ? (
+              <div
+                className="flex items-center justify-between gap-3 rounded-xl border border-[hsl(var(--danger)/0.4)] bg-[hsl(var(--danger)/0.12)] px-4 py-2.5 text-sm text-[hsl(var(--danger))]"
+                role="status"
+              >
+                <span>{loadError}</span>
+                <button
+                  className="rounded-lg border border-[hsl(var(--danger)/0.4)] px-3 py-1 font-medium hover:bg-[hsl(var(--danger)/0.18)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--danger))]"
+                  type="button"
+                  onClick={() => skipNext(true)}
+                >
+                  Skip
+                </button>
+              </div>
             ) : null}
-          </div>
 
-          {/* Scrubber */}
-          <div className="grid gap-2">
-            <div className="group relative h-1.5 rounded-full bg-[hsl(var(--surface-3))]">
-              <div
-                aria-hidden="true"
-                className="absolute inset-y-0 left-0 rounded-full bg-[linear-gradient(90deg,hsl(var(--mood)),hsl(var(--mood-2)))]"
-                style={{
-                  width: `${progress}%`,
-                  boxShadow: "0 0 24px hsl(var(--mood) / 0.55)",
-                }}
+            {/* Transport */}
+            <div className="flex flex-col items-center justify-center gap-5 sm:flex-row sm:flex-wrap sm:justify-between">
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                <TransportButton
+                  active={isQueueOpen}
+                  disabled={!queuePanel}
+                  label={isQueueOpen ? "Hide playlist" : "Show playlist"}
+                  onClick={() => onToggleQueue?.()}
+                >
+                  <ListMusic size={17} aria-hidden="true" />
+                </TransportButton>
+                <TransportButton
+                  disabled={!canGoPrevious}
+                  label="Previous track"
+                  onClick={skipPrevious}
+                >
+                  <SkipBack size={18} aria-hidden="true" fill="currentColor" />
+                </TransportButton>
+                <PlayButton isPlaying={isPlaying} onToggle={togglePlayback} />
+                <TransportButton
+                  disabled={!canGoNext}
+                  label="Next track"
+                  onClick={() => skipNext()}
+                >
+                  <SkipForward size={18} aria-hidden="true" fill="currentColor" />
+                </TransportButton>
+                <TransportButton
+                  active={repeatMode !== "off"}
+                  label={repeatLabel}
+                  onClick={cycleRepeatMode}
+                >
+                  {repeatMode === "track" ? (
+                    <Repeat1 size={16} aria-hidden="true" />
+                  ) : (
+                    <Repeat size={16} aria-hidden="true" />
+                  )}
+                </TransportButton>
+                <span className="hidden text-[10px] font-mono uppercase tracking-[0.24em] text-[hsl(var(--muted))] sm:inline">
+                  {tracks.length > 0
+                    ? `${(safeIndex + 1).toString().padStart(2, "0")} / ${tracks.length
+                        .toString()
+                        .padStart(2, "0")}`
+                    : ""}
+                </span>
+              </div>
+
+              <VolumeControl
+                isMuted={isMuted}
+                volume={volume}
+                onToggleMute={toggleMute}
+                onVolumeChange={setVolume}
               />
-              {/* Thumb — visible only on hover/focus to keep the line clean */}
-              <div
-                aria-hidden="true"
-                className="absolute -top-[5px] size-3.5 -translate-x-1/2 rounded-full bg-[hsl(var(--foreground))] opacity-0 shadow-[0_0_0_4px_hsl(var(--mood)/0.2)] ring-2 ring-[hsl(var(--mood))] transition group-hover:opacity-100"
-                style={{ left: `${progress}%` }}
-              />
-              <input
-                aria-label="Seek"
-                className="absolute inset-0 h-1.5 w-full cursor-pointer appearance-none bg-transparent"
-                max={Math.max(displayDuration, 1)}
-                min={0}
-                step={1}
-                type="range"
-                value={Math.min(currentTime, Math.max(displayDuration, 1))}
-                onChange={(event) => {
-                  const nextTime = Number(event.target.value);
-                  const audio = audioRef.current;
-
-                  if (audio) {
-                    audio.currentTime = nextTime;
-                  }
-
-                  setCurrentTime(nextTime);
-                }}
-              />
             </div>
-            <div className="flex justify-between font-mono text-[11px] tabular-nums text-[hsl(var(--muted))]">
-              <span>{formatDuration(currentTime)}</span>
-              <span>−{formatDuration(Math.max(displayDuration - currentTime, 0))}</span>
-            </div>
-          </div>
-
-          {loadError ? (
-            <div
-              className="flex items-center justify-between gap-3 rounded-xl border border-[hsl(var(--danger)/0.4)] bg-[hsl(var(--danger)/0.12)] px-4 py-2.5 text-sm text-[hsl(var(--danger))]"
-              role="status"
-            >
-              <span>{loadError}</span>
-              <button
-                className="rounded-lg border border-[hsl(var(--danger)/0.4)] px-3 py-1 font-medium hover:bg-[hsl(var(--danger)/0.18)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--danger))]"
-                type="button"
-                onClick={() => skipNext(true)}
-              >
-                Skip
-              </button>
-            </div>
-          ) : null}
-
-          {/* Transport */}
-          <div className="flex flex-wrap items-center justify-between gap-5">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <TransportButton
-                active={isQueueOpen}
-                disabled={!queuePanel}
-                label={isQueueOpen ? "Hide playlist" : "Show playlist"}
-                onClick={() => onToggleQueue?.()}
-              >
-                <ListMusic size={17} aria-hidden="true" />
-              </TransportButton>
-              <TransportButton
-                active={repeatMode !== "off"}
-                label={repeatLabel}
-                onClick={cycleRepeatMode}
-              >
-                {repeatMode === "track" ? (
-                  <Repeat1 size={16} aria-hidden="true" />
-                ) : (
-                  <Repeat size={16} aria-hidden="true" />
-                )}
-              </TransportButton>
-              <TransportButton
-                disabled={!canGoPrevious}
-                label="Previous track"
-                onClick={skipPrevious}
-              >
-                <SkipBack size={18} aria-hidden="true" fill="currentColor" />
-              </TransportButton>
-              <PlayButton isPlaying={isPlaying} onToggle={togglePlayback} />
-              <TransportButton
-                disabled={!canGoNext}
-                label="Next track"
-                onClick={() => skipNext()}
-              >
-                <SkipForward size={18} aria-hidden="true" fill="currentColor" />
-              </TransportButton>
-              <span className="hidden text-[10px] font-mono uppercase tracking-[0.24em] text-[hsl(var(--muted))] sm:inline">
-                {tracks.length > 0
-                  ? `${(safeIndex + 1).toString().padStart(2, "0")} / ${tracks.length
-                      .toString()
-                      .padStart(2, "0")}`
-                  : ""}
-              </span>
-            </div>
-
-            <VolumeControl
-              isMuted={isMuted}
-              volume={volume}
-              onToggleMute={toggleMute}
-              onVolumeChange={setVolume}
-            />
           </div>
         </div>
+
+        {hasQueuePanel ? (
+          <aside className="relative z-10 hidden min-h-full overflow-hidden border-l border-[hsl(var(--border)/0.55)] bg-[hsl(var(--surface)/0.58)] backdrop-blur-xl xl:block">
+            {queuePanel}
+          </aside>
+        ) : null}
       </div>
-      {isQueueOpen && queuePanel ? (
-        <div className="absolute inset-x-3 bottom-3 z-20 max-h-[calc(100%-1.5rem)] overflow-hidden rounded-2xl border border-[hsl(var(--border)/0.7)] bg-[hsl(var(--surface)/0.96)] shadow-[0_22px_80px_-28px_hsl(var(--background))] backdrop-blur-xl sm:inset-x-auto sm:right-4 sm:top-4 sm:w-80">
+      {hasQueuePanel ? (
+        <div className="relative z-10 max-h-[min(24rem,calc(100vh-8rem))] overflow-hidden border-t border-[hsl(var(--border)/0.55)] bg-[hsl(var(--surface)/0.72)] backdrop-blur-xl xl:hidden">
           {queuePanel}
         </div>
       ) : null}
@@ -618,7 +630,7 @@ function VolumeControl({
   onVolumeChange: (next: number) => void;
 }) {
   return (
-    <div className="flex min-w-[160px] items-center gap-2 text-sm text-[hsl(var(--muted))]">
+    <div className="flex w-full max-w-[220px] items-center gap-2 text-sm text-[hsl(var(--muted))] sm:w-auto sm:min-w-[160px]">
       <button
         aria-label={isMuted ? "Unmute" : "Mute"}
         className="grid size-9 place-items-center rounded-full text-[hsl(var(--muted))] transition hover:text-foreground focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mood)/0.45)]"

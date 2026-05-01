@@ -16,19 +16,28 @@ export function formatDuration(
 
 export function formatTotalDuration(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds <= 0) {
-    return "0 min";
+    return "0 minutes";
   }
 
   const totalMinutes = Math.round(seconds / 60);
 
   if (totalMinutes < 60) {
-    return `${totalMinutes} min`;
+    return formatDurationUnit(totalMinutes, "minute");
   }
 
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
 
-  return minutes === 0 ? `${hours} hr` : `${hours} hr ${minutes} min`;
+  return minutes === 0
+    ? formatDurationUnit(hours, "hour")
+    : `${formatDurationUnit(hours, "hour")} ${formatDurationUnit(
+        minutes,
+        "minute",
+      )}`;
+}
+
+function formatDurationUnit(value: number, unit: "hour" | "minute"): string {
+  return `${value} ${unit}${value === 1 ? "" : "s"}`;
 }
 
 export function formatBytes(value: number | string): string {

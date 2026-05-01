@@ -49,19 +49,19 @@ export function EqualizerIcon({
     >
       <span
         className={`eq-bar ${isPlaying ? "" : "eq-paused"}`}
-        style={{ animationDelay: "0ms" }}
+        style={{ animationDelay: "0ms", background: "currentColor" }}
       />
       <span
         className={`eq-bar ${isPlaying ? "" : "eq-paused"}`}
-        style={{ animationDelay: "180ms" }}
+        style={{ animationDelay: "180ms", background: "currentColor" }}
       />
       <span
         className={`eq-bar ${isPlaying ? "" : "eq-paused"}`}
-        style={{ animationDelay: "360ms" }}
+        style={{ animationDelay: "360ms", background: "currentColor" }}
       />
       <span
         className={`eq-bar ${isPlaying ? "" : "eq-paused"}`}
-        style={{ animationDelay: "120ms" }}
+        style={{ animationDelay: "120ms", background: "currentColor" }}
       />
     </span>
   );
