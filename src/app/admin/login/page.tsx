@@ -23,18 +23,18 @@ export default async function AdminLoginPage() {
         <div className="panel relative overflow-hidden p-8 sm:p-10">
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -top-32 right-0 size-64 rounded-full bg-[hsl(var(--accent-2)/0.25)] blur-3xl"
+            className="pointer-events-none absolute -top-32 right-0 size-64 rounded-full bg-[hsl(var(--mood-2)/0.22)] blur-3xl"
           />
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -bottom-32 -left-12 size-72 rounded-full bg-[hsl(var(--accent)/0.18)] blur-3xl"
+            className="pointer-events-none absolute -bottom-32 -left-12 size-72 rounded-full bg-[hsl(var(--mood)/0.18)] blur-3xl"
           />
 
           <div className="relative">
             <div className="flex items-center gap-3">
               <span
                 aria-hidden="true"
-                className="grid size-10 place-items-center rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2)/0.7)] text-[hsl(var(--accent))]"
+                className="grid size-10 place-items-center rounded-2xl border border-[hsl(var(--mood)/0.35)] bg-[hsl(var(--surface-2)/0.7)] text-[hsl(var(--mood))]"
               >
                 <BrandIcon />
               </span>

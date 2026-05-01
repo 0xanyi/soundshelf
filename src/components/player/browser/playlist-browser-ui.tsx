@@ -1,0 +1,711 @@
+"use client";
+
+import {
+  AlertCircle,
+  ChevronDown,
+  Headphones,
+  Music2,
+  Play,
+  RefreshCw,
+} from "lucide-react";
+import type { CSSProperties } from "react";
+
+import type { PlayerTrack } from "@/components/player/audio-player";
+import type {
+  LoadState,
+  PublicPlaylistDetail,
+  PublicPlaylistSummary,
+} from "@/components/player/browser/types";
+import { BrandIcon, EqualizerIcon } from "@/components/ui/brand-icon";
+import { formatDuration, formatTotalDuration } from "@/lib/format";
+import { getMood } from "@/lib/mood";
+
+/* ---------------- Header ---------------- */
+
+export function BrandHeader() {
+  return (
+    <header className="flex items-center justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="relative grid size-11 place-items-center rounded-2xl border border-[hsl(var(--mood)/0.35)] bg-[hsl(var(--surface)/0.6)] text-[hsl(var(--mood))]"
+          style={{
+            boxShadow:
+              "inset 0 1px 0 hsl(var(--foreground) / 0.08), 0 12px 32px -12px hsl(var(--mood) / 0.45)",
+          }}
+        >
+          <BrandIcon className="size-5" />
+        </span>
+        <div className="min-w-0 leading-tight">
+          <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-[hsl(var(--mood))]">
+            Soundshelf
+          </p>
+          <h1 className="display-heading hidden text-base font-semibold sm:block sm:text-lg">
+            Curated audio, beautifully played.
+          </h1>
+          <h1 className="display-heading text-base font-semibold sm:hidden">
+            Curated audio.
+          </h1>
+        </div>
+      </div>
+
+      <a
+        className="group inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border)/0.7)] bg-[hsl(var(--surface)/0.5)] px-3.5 py-1.5 text-xs font-medium text-[hsl(var(--muted))] transition hover:border-[hsl(var(--mood)/0.4)] hover:text-foreground"
+        href="/admin"
+      >
+        <Headphones size={13} aria-hidden="true" className="opacity-80" />
+        <span>Admin</span>
+      </a>
+    </header>
+  );
+}
+
+/* ---------------- Section heading ---------------- */
+
+export function SectionHeading({
+  count,
+  kicker,
+  title,
+}: {
+  count?: number;
+  kicker: string;
+  title: string;
+}) {
+  return (
+    <div className="mb-4 flex items-end justify-between gap-3">
+      <div>
+        <p className="kicker">{kicker}</p>
+        <h2 className="display-heading mt-1 text-2xl font-semibold sm:text-3xl">
+          {title}
+        </h2>
+      </div>
+      {typeof count === "number" ? (
+        <span className="font-mono text-[11px] uppercase tracking-[0.24em] text-[hsl(var(--muted))]">
+          {count.toString().padStart(2, "0")} playlist{count === 1 ? "" : "s"}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+/* ---------------- Playlist rail (mobile) ---------------- */
+
+export function PlaylistRail({
+  error,
+  playlists,
+  selectedPlaylistId,
+  state,
+  onRetry,
+  onSelect,
+}: {
+  error: string | null;
+  playlists: PublicPlaylistSummary[];
+  selectedPlaylistId: string | null;
+  state: LoadState;
+  onRetry: () => void;
+  onSelect: (id: string) => void;
+}) {
+  if (state === "loading") {
+    return (
+      <div
+        className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4"
+        aria-busy="true"
+      >
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            aria-hidden="true"
+            className="h-32 w-44 shrink-0 animate-pulse rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--surface-2)/0.6)]"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (state === "error") {
+    return (
+      <InlineError
+        actionLabel="Try again"
+        message={error ?? "Unable to load playlists."}
+        onAction={onRetry}
+      />
+    );
+  }
+
+  if (playlists.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-[hsl(var(--border)/0.7)] bg-[hsl(var(--surface)/0.4)] px-5 py-8 text-center">
+        <p className="text-sm text-[hsl(var(--muted))]">
+          No published playlists yet. The shelf is being stocked.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="-mx-4 px-4">
+      <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1 scroll-fade">
+        {playlists.map((playlist) => (
+          <PlaylistCard
+            key={playlist.id}
+            isSelected={playlist.id === selectedPlaylistId}
+            playlist={playlist}
+            onClick={() => onSelect(playlist.id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PlaylistCard({
+  isSelected,
+  playlist,
+  onClick,
+}: {
+  isSelected: boolean;
+  playlist: PublicPlaylistSummary;
+  onClick: () => void;
+}) {
+  const mood = getMood(playlist.id);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-selected={isSelected}
+      aria-pressed={isSelected}
+      style={mood.cssVars as CSSProperties}
+      className="group relative w-44 shrink-0 snap-start overflow-hidden rounded-2xl border border-[hsl(var(--border)/0.7)] bg-[hsl(var(--surface)/0.6)] p-4 text-left transition focus:outline-none focus:ring-4 focus:ring-[hsl(var(--mood)/0.25)] data-[selected=true]:border-[hsl(var(--mood)/0.5)] data-[selected=true]:bg-[hsl(var(--surface-2)/0.85)]"
+    >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-70"
+        style={{
+          background:
+            "radial-gradient(120% 120% at 0% 0%, hsl(var(--mood) / 0.22), transparent 55%)",
+        }}
+      />
+      <div className="relative flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <span
+            aria-hidden="true"
+            className="grid size-9 place-items-center rounded-full"
+            style={{
+              background:
+                "linear-gradient(135deg, hsl(var(--mood)) 0%, hsl(var(--mood-2)) 100%)",
+              color: "hsl(28 40% 8%)",
+              boxShadow: "0 8px 20px -8px hsl(var(--mood) / 0.6)",
+            }}
+          >
+            {isSelected ? (
+              <EqualizerIcon className="h-3 text-current" />
+            ) : (
+              <Play size={12} fill="currentColor" className="translate-x-[1px]" />
+            )}
+          </span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-[hsl(var(--muted))]">
+            {playlist.itemCount.toString().padStart(2, "0")} tracks
+          </span>
+        </div>
+        <h3 className="display-heading line-clamp-2 text-base font-semibold leading-tight">
+          {playlist.title}
+        </h3>
+      </div>
+    </button>
+  );
+}
+
+/* ---------------- Playlist list (desktop, with expand) ---------------- */
+
+export function PlaylistList({
+  currentTrackIndex,
+  description,
+  detailError,
+  detailState,
+  error,
+  isTracksOpen,
+  playlist,
+  playlists,
+  selectedPlaylistId,
+  state,
+  totalDurationSeconds,
+  onRetry,
+  onRetryDetail,
+  onSelect,
+  onSelectTrack,
+  onToggleTracks,
+}: {
+  currentTrackIndex: number;
+  description: string | null;
+  detailError: string | null;
+  detailState: LoadState;
+  error: string | null;
+  isTracksOpen: boolean;
+  playlist: PublicPlaylistDetail | null;
+  playlists: PublicPlaylistSummary[];
+  selectedPlaylistId: string | null;
+  state: LoadState;
+  totalDurationSeconds: number;
+  onRetry: () => void;
+  onRetryDetail: () => void;
+  onSelect: (id: string) => void;
+  onSelectTrack: (index: number) => void;
+  onToggleTracks: () => void;
+}) {
+  if (state === "loading") {
+    return (
+      <div className="grid gap-2" aria-busy="true">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            aria-hidden="true"
+            className="h-16 animate-pulse rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--surface-2)/0.5)]"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (state === "error") {
+    return (
+      <InlineError
+        actionLabel="Try again"
+        message={error ?? "Unable to load playlists."}
+        onAction={onRetry}
+      />
+    );
+  }
+
+  if (playlists.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-[hsl(var(--border)/0.7)] bg-[hsl(var(--surface)/0.4)] px-5 py-10 text-center">
+        <p className="text-sm text-[hsl(var(--muted))]">
+          No published playlists yet.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <ol className="grid gap-2" role="list">
+      {playlists.map((summary) => {
+        const isSelected = summary.id === selectedPlaylistId;
+        const isExpanded = isSelected && isTracksOpen;
+        const mood = getMood(summary.id);
+        const expandedDetail = isSelected ? playlist : null;
+        const expandedTotalSeconds = isSelected ? totalDurationSeconds : 0;
+        const tracksId = `playlist-${summary.id}-tracks`;
+
+        return (
+          <li key={summary.id}>
+            <div
+              data-selected={isSelected}
+              data-expanded={isExpanded}
+              style={mood.cssVars as CSSProperties}
+              className="group relative overflow-hidden rounded-2xl border border-transparent transition data-[selected=true]:border-[hsl(var(--mood)/0.35)] data-[selected=true]:bg-[hsl(var(--surface-2)/0.55)]"
+            >
+              {/* Active accent stripe */}
+              <span
+                aria-hidden="true"
+                className="absolute inset-y-3 left-0 w-[3px] rounded-r-full opacity-0 transition group-data-[selected=true]:opacity-100"
+                style={{
+                  background:
+                    "linear-gradient(180deg, hsl(var(--mood)), hsl(var(--mood-2)))",
+                  boxShadow: "0 0 18px hsl(var(--mood) / 0.65)",
+                }}
+              />
+
+              {/* Header row — clickable to select */}
+              <div className="flex items-center gap-2 pr-2">
+                <button
+                  type="button"
+                  onClick={() => onSelect(summary.id)}
+                  aria-pressed={isSelected}
+                  className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left transition hover:bg-[hsl(var(--surface-2)/0.55)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mood)/0.4)]"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="grid size-10 shrink-0 place-items-center rounded-xl"
+                    style={{
+                      background: isSelected
+                        ? "linear-gradient(135deg, hsl(var(--mood)) 0%, hsl(var(--mood-2)) 100%)"
+                        : "hsl(var(--surface-2) / 0.85)",
+                      color: isSelected
+                        ? "hsl(28 40% 8%)"
+                        : "hsl(var(--muted))",
+                      border: isSelected
+                        ? "1px solid hsl(var(--mood) / 0.5)"
+                        : "1px solid hsl(var(--border) / 0.6)",
+                      boxShadow: isSelected
+                        ? "0 8px 22px -10px hsl(var(--mood) / 0.6)"
+                        : "none",
+                    }}
+                  >
+                    {isSelected ? (
+                      <EqualizerIcon className="h-3 text-current" />
+                    ) : (
+                      <Music2 size={14} />
+                    )}
+                  </span>
+
+                  <span className="min-w-0 flex-1">
+                    <span
+                      className={`block truncate text-[13.5px] font-medium ${
+                        isSelected ? "text-foreground" : "text-foreground/90"
+                      }`}
+                    >
+                      {summary.title}
+                    </span>
+                    <span className="mt-0.5 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--muted))]">
+                      <span>
+                        {summary.itemCount.toString().padStart(2, "0")}{" "}
+                        {summary.itemCount === 1 ? "track" : "tracks"}
+                      </span>
+                      {isSelected && expandedTotalSeconds > 0 ? (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span>{formatTotalDuration(expandedTotalSeconds)}</span>
+                        </>
+                      ) : null}
+                    </span>
+                  </span>
+                </button>
+
+                {/* Chevron — only enabled on the selected playlist (no track
+                    cache for others yet). Toggles the inline tracks panel. */}
+                <button
+                  type="button"
+                  aria-label={isExpanded ? "Hide tracks" : "Show tracks"}
+                  aria-expanded={isExpanded}
+                  aria-controls={tracksId}
+                  onClick={() => {
+                    if (!isSelected) {
+                      onSelect(summary.id);
+                      return;
+                    }
+                    onToggleTracks();
+                  }}
+                  className="grid size-8 shrink-0 place-items-center rounded-full text-[hsl(var(--muted))] transition hover:bg-[hsl(var(--surface-3)/0.7)] hover:text-foreground focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mood)/0.4)]"
+                >
+                  <ChevronDown
+                    size={16}
+                    aria-hidden="true"
+                    className={`transition-transform ${
+                      isExpanded ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Expanded body — only rendered for the selected playlist */}
+              {isSelected ? (
+                <div
+                  id={tracksId}
+                  hidden={!isExpanded}
+                  className="border-t border-[hsl(var(--border)/0.5)] px-2 pb-2"
+                >
+                  {description ? (
+                    <p className="px-2 pt-3 text-[12.5px] leading-5 text-[hsl(var(--muted))]">
+                      {description}
+                    </p>
+                  ) : null}
+
+                  <ExpandedTrackList
+                    currentIndex={currentTrackIndex}
+                    error={detailError}
+                    onRetry={onRetryDetail}
+                    onSelectTrack={onSelectTrack}
+                    playlist={expandedDetail}
+                    state={detailState}
+                  />
+                </div>
+              ) : null}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function ExpandedTrackList({
+  currentIndex,
+  error,
+  onRetry,
+  onSelectTrack,
+  playlist,
+  state,
+}: {
+  currentIndex: number;
+  error: string | null;
+  onRetry: () => void;
+  onSelectTrack: (index: number) => void;
+  playlist: PublicPlaylistDetail | null;
+  state: LoadState;
+}) {
+  if (state === "loading") {
+    return (
+      <div className="grid gap-1.5 px-2 pt-3" aria-busy="true">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={index}
+            aria-hidden="true"
+            className="h-11 animate-pulse rounded-xl bg-[hsl(var(--surface-3)/0.5)]"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (state === "error") {
+    return (
+      <div className="px-2 pt-3">
+        <InlineError
+          actionLabel="Retry"
+          message={error ?? "Unable to load this playlist."}
+          onAction={onRetry}
+        />
+      </div>
+    );
+  }
+
+  if (!playlist || playlist.tracks.length === 0) {
+    return (
+      <p className="px-2 py-4 text-center text-xs text-[hsl(var(--muted))]">
+        No playable tracks yet.
+      </p>
+    );
+  }
+
+  return (
+    <ol className="grid gap-0.5 pt-2" role="list">
+      {playlist.tracks.map((track, index) => (
+        <TrackRow
+          key={track.playlistItemId}
+          isActive={index === currentIndex}
+          index={index}
+          track={track}
+          onClick={() => onSelectTrack(index)}
+        />
+      ))}
+    </ol>
+  );
+}
+
+/* ---------------- Mobile tracks accordion ---------------- */
+
+export function TracksAccordion({
+  currentIndex,
+  description,
+  error,
+  isOpen,
+  playlist,
+  state,
+  title,
+  totalDurationSeconds,
+  onRetry,
+  onSelectTrack,
+  onToggle,
+}: {
+  currentIndex: number;
+  description: string | null;
+  error: string | null;
+  isOpen: boolean;
+  playlist: PublicPlaylistDetail | null;
+  state: LoadState;
+  title: string | null;
+  totalDurationSeconds: number;
+  onRetry: () => void;
+  onSelectTrack: (index: number) => void;
+  onToggle: () => void;
+}) {
+  const tracksId = "mobile-playlist-tracks";
+
+  return (
+    <section className="panel-quiet overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls={tracksId}
+        className="flex w-full items-center gap-3 border-b border-[hsl(var(--border)/0.5)] px-5 py-5 text-left transition hover:bg-[hsl(var(--surface-3)/0.4)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mood)/0.4)] data-[open=false]:border-b-transparent sm:px-6 sm:py-6"
+        data-open={isOpen}
+      >
+        <div className="min-w-0 flex-1">
+          <p className="kicker">Up next</p>
+          <h3 className="display-heading mt-1 truncate text-2xl font-semibold sm:text-[28px]">
+            {title ?? "Pick a playlist"}
+          </h3>
+          {playlist?.tracks.length ? (
+            <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.18em] text-[hsl(var(--muted))]">
+              {playlist.tracks.length.toString().padStart(2, "0")} tracks ·{" "}
+              {formatTotalDuration(totalDurationSeconds)}
+            </p>
+          ) : null}
+        </div>
+        <span
+          aria-hidden="true"
+          className="grid size-9 place-items-center rounded-full border border-[hsl(var(--border)/0.6)] bg-[hsl(var(--surface-3)/0.5)] text-[hsl(var(--muted))]"
+        >
+          <ChevronDown
+            size={16}
+            className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
+          />
+        </span>
+      </button>
+
+      {isOpen ? (
+        <div id={tracksId} className="px-3 py-3 sm:px-4 sm:py-4">
+          {description ? (
+            <p className="mb-3 px-2 text-sm leading-6 text-[hsl(var(--muted))]">
+              {description}
+            </p>
+          ) : null}
+
+          {state === "loading" ? (
+            <div className="grid gap-1.5" aria-busy="true">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  key={index}
+                  aria-hidden="true"
+                  className="h-14 animate-pulse rounded-2xl bg-[hsl(var(--surface-3)/0.5)]"
+                />
+              ))}
+              <span className="sr-only">Loading tracks...</span>
+            </div>
+          ) : null}
+
+          {state === "error" ? (
+            <InlineError
+              actionLabel="Retry"
+              message={error ?? "Unable to load this playlist."}
+              onAction={onRetry}
+            />
+          ) : null}
+
+          {state === "idle" && playlist?.tracks.length === 0 ? (
+            <div className="grid place-items-center gap-3 px-4 py-12 text-center text-sm text-[hsl(var(--muted))]">
+              <Music2 size={20} aria-hidden="true" />
+              <p>This playlist has no playable tracks yet.</p>
+            </div>
+          ) : null}
+
+          {playlist?.tracks.length ? (
+            <ol className="grid gap-1" role="list">
+              {playlist.tracks.map((track, index) => (
+                <TrackRow
+                  key={track.playlistItemId}
+                  isActive={index === currentIndex}
+                  index={index}
+                  track={track}
+                  onClick={() => onSelectTrack(index)}
+                  showDescription
+                />
+              ))}
+            </ol>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+/* ---------------- Track row (shared) ---------------- */
+
+function TrackRow({
+  isActive,
+  index,
+  track,
+  onClick,
+  showDescription = false,
+}: {
+  isActive: boolean;
+  index: number;
+  track: PlayerTrack;
+  onClick: () => void;
+  showDescription?: boolean;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        aria-current={isActive ? "true" : undefined}
+        className="group grid w-full grid-cols-[2.25rem_1fr_auto] items-center gap-3 rounded-2xl border border-transparent px-2 py-2.5 text-left transition hover:bg-[hsl(var(--surface-3)/0.6)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mood)/0.4)] data-[active=true]:border-[hsl(var(--mood)/0.35)] data-[active=true]:bg-[hsl(var(--mood)/0.08)]"
+        data-active={isActive}
+        onClick={onClick}
+      >
+        <span
+          aria-hidden="true"
+          className={`grid size-9 place-items-center rounded-xl font-mono text-[11px] tabular-nums transition ${
+            isActive
+              ? "border-transparent text-[hsl(28_40%_8%)]"
+              : "border border-[hsl(var(--border)/0.6)] bg-[hsl(var(--surface-2)/0.7)] text-[hsl(var(--muted))] group-hover:text-foreground"
+          }`}
+          style={
+            isActive
+              ? {
+                  background:
+                    "linear-gradient(135deg, hsl(var(--mood)) 0%, hsl(var(--mood-2)) 100%)",
+                  boxShadow: "0 8px 22px -10px hsl(var(--mood) / 0.6)",
+                }
+              : undefined
+          }
+        >
+          {isActive ? (
+            <EqualizerIcon className="h-3 text-current" />
+          ) : (
+            (index + 1).toString().padStart(2, "0")
+          )}
+        </span>
+        <span className="min-w-0">
+          <span
+            className={`block truncate text-[14px] font-medium ${
+              isActive ? "text-foreground" : "text-foreground/90"
+            }`}
+          >
+            {track.title}
+          </span>
+          {showDescription && track.description ? (
+            <span className="mt-0.5 block truncate text-xs text-[hsl(var(--muted))]">
+              {track.description}
+            </span>
+          ) : null}
+        </span>
+        <span className="font-mono text-[11px] tabular-nums text-[hsl(var(--muted))]">
+          {formatDuration(track.durationSeconds)}
+        </span>
+      </button>
+    </li>
+  );
+}
+
+/* ---------------- Inline error ---------------- */
+
+function InlineError({
+  actionLabel,
+  message,
+  onAction,
+}: {
+  actionLabel?: string;
+  message: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-start gap-3 rounded-2xl border border-[hsl(var(--danger)/0.4)] bg-[hsl(var(--danger)/0.08)] px-4 py-4 text-sm text-[hsl(var(--danger))] sm:flex-row sm:items-center sm:justify-between">
+      <span className="flex items-center gap-2">
+        <AlertCircle size={16} aria-hidden="true" />
+        {message}
+      </span>
+      {actionLabel && onAction ? (
+        <button
+          className="inline-flex items-center gap-2 rounded-lg border border-[hsl(var(--danger)/0.4)] px-3 py-1.5 font-medium hover:bg-[hsl(var(--danger)/0.18)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--danger))]"
+          type="button"
+          onClick={onAction}
+        >
+          <RefreshCw size={14} aria-hidden="true" />
+          {actionLabel}
+        </button>
+      ) : null}
+    </div>
+  );
+}

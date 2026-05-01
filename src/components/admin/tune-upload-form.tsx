@@ -4,6 +4,7 @@ import { CheckCircle2, FileAudio, Loader2, TriangleAlert, Upload } from "lucide-
 import { useRouter } from "next/navigation";
 import { type FormEvent, useRef, useState } from "react";
 
+import { readAudioDuration } from "@/lib/audio-duration";
 import { formatBytes } from "@/lib/format";
 
 export function TuneUploadForm() {
@@ -26,10 +27,17 @@ export function TuneUploadForm() {
 
     const formData = new FormData();
     formData.set("file", selectedFile);
+
     setIsUploading(true);
     setMessage(null);
 
     try {
+      const durationSeconds = await readAudioDuration(selectedFile);
+
+      if (durationSeconds > 0) {
+        formData.set("durationSeconds", durationSeconds.toString());
+      }
+
       const response = await fetch("/api/admin/tunes/upload", {
         method: "POST",
         body: formData,
@@ -157,3 +165,4 @@ async function readError(response: Response): Promise<string> {
     return "Upload failed.";
   }
 }
+

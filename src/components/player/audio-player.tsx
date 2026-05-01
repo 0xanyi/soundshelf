@@ -9,7 +9,6 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
-  AudioLines,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -18,6 +17,7 @@ import {
   type RepeatMode,
 } from "@/lib/playlist/playback";
 import { formatDuration } from "@/lib/format";
+import { EqualizerIcon } from "@/components/ui/brand-icon";
 
 export type PlayerTrack = {
   id: string;
@@ -33,6 +33,12 @@ type AudioPlayerProps = {
   currentIndex: number;
   onCurrentIndexChange: (nextIndex: number) => void;
   playlistTitle?: string | null;
+  /**
+   * Called when the audio element resolves a real duration that differs
+   * from the metadata we received from the API. Used to self-heal tracks
+   * that were uploaded before durations were captured.
+   */
+  onDurationDiscovered?: (track: PlayerTrack, durationSeconds: number) => void;
 };
 
 export function AudioPlayer({
@@ -40,6 +46,7 @@ export function AudioPlayer({
   currentIndex,
   onCurrentIndexChange,
   playlistTitle,
+  onDurationDiscovered,
 }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -90,7 +97,6 @@ export function AudioPlayer({
     });
   }, [currentTrack, shouldResumePlayback]);
 
-  // Reset progress when the track changes externally (render-phase derived state).
   if (trackedItemId !== (currentTrack?.playlistItemId ?? null)) {
     setTrackedItemId(currentTrack?.playlistItemId ?? null);
     setCurrentTime(0);
@@ -162,27 +168,15 @@ export function AudioPlayer({
 
   const cycleRepeatMode = useCallback(() => {
     setRepeatMode((mode) => {
-      if (mode === "off") {
-        return "track";
-      }
-
-      if (mode === "track") {
-        return "playlist";
-      }
-
+      if (mode === "off") return "track";
+      if (mode === "track") return "playlist";
       return "off";
     });
   }, []);
 
   const repeatLabel = useMemo(() => {
-    if (repeatMode === "track") {
-      return "Repeat track";
-    }
-
-    if (repeatMode === "playlist") {
-      return "Repeat playlist";
-    }
-
+    if (repeatMode === "track") return "Repeat track";
+    if (repeatMode === "playlist") return "Repeat playlist";
     return "Repeat off";
   }, [repeatMode]);
 
@@ -214,32 +208,15 @@ export function AudioPlayer({
   }, [previousVolume]);
 
   if (!currentTrack) {
-    return (
-      <section className="panel relative overflow-hidden p-8 sm:p-10">
-        <AmbientGlow />
-        <div className="relative grid place-items-center gap-3 py-12 text-center">
-          <div className="grid size-16 place-items-center rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--surface-2)/0.7)] text-[hsl(var(--accent))]">
-            <AudioLines size={26} aria-hidden="true" />
-          </div>
-          <p className="kicker">SoundShelf</p>
-          <h2 className="display-heading text-2xl font-semibold sm:text-3xl">
-            Select a playlist to start listening.
-          </h2>
-          <p className="max-w-md text-sm text-[hsl(var(--muted))]">
-            Pick a curated collection from the sidebar and the player will glow
-            into life with the first track.
-          </p>
-        </div>
-      </section>
-    );
+    return <EmptyPlayer />;
   }
 
   return (
     <section
       aria-label="Audio player"
-      className="panel relative overflow-hidden p-6 sm:p-8"
+      className="panel relative isolate overflow-hidden"
     >
-      <AmbientGlow />
+      <PlayerBackdrop />
 
       <audio
         key={currentTrack.playlistItemId}
@@ -247,7 +224,23 @@ export function AudioPlayer({
         preload="metadata"
         src={currentTrack.audioUrl}
         onCanPlay={() => setLoadError(null)}
-        onDurationChange={(event) => setDuration(event.currentTarget.duration || 0)}
+        onDurationChange={(event) => {
+          const next = event.currentTarget.duration || 0;
+          setDuration(next);
+
+          // If the metadata we got from the API was missing or stale,
+          // surface the real duration so the parent can repair its cache
+          // (and, if appropriate, persist the fix server-side).
+          if (
+            currentTrack &&
+            onDurationDiscovered &&
+            Number.isFinite(next) &&
+            next > 0 &&
+            Math.abs(next - currentTrack.durationSeconds) >= 1
+          ) {
+            onDurationDiscovered(currentTrack, next);
+          }
+        }}
         onEnded={handleEnded}
         onError={() => {
           setIsPlaying(false);
@@ -258,48 +251,65 @@ export function AudioPlayer({
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
       />
 
-      <div className="relative grid gap-8 md:grid-cols-[200px_minmax(0,1fr)] md:items-center md:gap-10">
-        <PlayerEmblem isPlaying={isPlaying} />
+      <div className="relative grid gap-7 p-5 sm:p-7 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:items-center md:gap-10 md:p-9 lg:p-11">
+        <Vinyl isPlaying={isPlaying} />
 
-        <div className="grid gap-6">
-          <div className="grid gap-2">
-            <p className="kicker flex items-center gap-2">
-              <span
-                aria-hidden="true"
-                className={`size-2 rounded-full ${
-                  isPlaying
-                    ? "bg-[hsl(var(--accent))] shadow-[0_0_12px_hsl(var(--accent))]"
-                    : "bg-[hsl(var(--muted))]"
-                }`}
+        <div className="flex min-w-0 flex-col gap-6">
+          <div className="flex min-w-0 flex-col gap-3">
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.32em]">
+              <EqualizerIcon
+                isPlaying={isPlaying}
+                className="h-3 text-[hsl(var(--mood))]"
               />
-              {isPlaying ? "Now Playing" : "On Deck"}
+              <span className="font-mono text-[hsl(var(--mood))]">
+                {isPlaying ? "Now Playing" : "Paused"}
+              </span>
               {playlistTitle ? (
-                <span className="text-[hsl(var(--muted))] normal-case tracking-normal">
-                  {" "}
-                  · {playlistTitle}
-                </span>
+                <>
+                  <span className="text-[hsl(var(--border))]" aria-hidden="true">
+                    /
+                  </span>
+                  <span className="truncate font-mono text-[hsl(var(--muted))] normal-case tracking-[0.18em]">
+                    {playlistTitle}
+                  </span>
+                </>
               ) : null}
-            </p>
-            <h2 className="display-heading text-2xl font-semibold leading-tight sm:text-3xl md:text-4xl">
-              {currentTrack.title}
+            </div>
+
+            <h2
+              className="display-heading text-balance text-3xl font-semibold leading-[1.05] sm:text-4xl md:text-5xl"
+              key={currentTrack.id}
+            >
+              <span className="rise-in inline-block">{currentTrack.title}</span>
             </h2>
+
             {currentTrack.description ? (
-              <p className="line-clamp-2 max-w-xl text-sm leading-6 text-[hsl(var(--muted))]">
+              <p className="line-clamp-2 max-w-xl text-[13.5px] leading-6 text-[hsl(var(--muted))]">
                 {currentTrack.description}
               </p>
             ) : null}
           </div>
 
+          {/* Scrubber */}
           <div className="grid gap-2">
-            <div className="relative h-2 rounded-full bg-[hsl(var(--surface-2))]">
+            <div className="group relative h-1.5 rounded-full bg-[hsl(var(--surface-3))]">
               <div
                 aria-hidden="true"
-                className="absolute inset-y-0 left-0 rounded-full bg-[linear-gradient(90deg,hsl(var(--accent)),hsl(var(--accent-2)))] shadow-[0_0_24px_hsl(var(--accent)/0.4)]"
-                style={{ width: `${progress}%` }}
+                className="absolute inset-y-0 left-0 rounded-full bg-[linear-gradient(90deg,hsl(var(--mood)),hsl(var(--mood-2)))]"
+                style={{
+                  width: `${progress}%`,
+                  boxShadow: "0 0 24px hsl(var(--mood) / 0.55)",
+                }}
+              />
+              {/* Thumb — visible only on hover/focus to keep the line clean */}
+              <div
+                aria-hidden="true"
+                className="absolute -top-[5px] size-3.5 -translate-x-1/2 rounded-full bg-[hsl(var(--foreground))] opacity-0 shadow-[0_0_0_4px_hsl(var(--mood)/0.2)] ring-2 ring-[hsl(var(--mood))] transition group-hover:opacity-100"
+                style={{ left: `${progress}%` }}
               />
               <input
                 aria-label="Seek"
-                className="absolute inset-0 h-2 w-full cursor-pointer appearance-none bg-transparent"
+                className="absolute inset-0 h-1.5 w-full cursor-pointer appearance-none bg-transparent"
                 max={Math.max(displayDuration, 1)}
                 min={0}
                 step={1}
@@ -339,75 +349,50 @@ export function AudioPlayer({
             </div>
           ) : null}
 
+          {/* Transport */}
           <div className="flex flex-wrap items-center justify-between gap-5">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <TransportButton
-                disabled={!canGoPrevious}
-                label="Previous track"
-                onClick={skipPrevious}
-              >
-                <SkipBack size={20} aria-hidden="true" />
-              </TransportButton>
-              <PlayButton
-                isPlaying={isPlaying}
-                onToggle={togglePlayback}
-              />
-              <TransportButton
-                disabled={!canGoNext}
-                label="Next track"
-                onClick={() => skipNext()}
-              >
-                <SkipForward size={20} aria-hidden="true" />
-              </TransportButton>
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <TransportButton
                 active={repeatMode !== "off"}
                 label={repeatLabel}
                 onClick={cycleRepeatMode}
               >
                 {repeatMode === "track" ? (
-                  <Repeat1 size={18} aria-hidden="true" />
+                  <Repeat1 size={16} aria-hidden="true" />
                 ) : (
-                  <Repeat size={18} aria-hidden="true" />
+                  <Repeat size={16} aria-hidden="true" />
                 )}
               </TransportButton>
+              <TransportButton
+                disabled={!canGoPrevious}
+                label="Previous track"
+                onClick={skipPrevious}
+              >
+                <SkipBack size={18} aria-hidden="true" fill="currentColor" />
+              </TransportButton>
+              <PlayButton isPlaying={isPlaying} onToggle={togglePlayback} />
+              <TransportButton
+                disabled={!canGoNext}
+                label="Next track"
+                onClick={() => skipNext()}
+              >
+                <SkipForward size={18} aria-hidden="true" fill="currentColor" />
+              </TransportButton>
+              <span className="hidden text-[10px] font-mono uppercase tracking-[0.24em] text-[hsl(var(--muted))] sm:inline">
+                {tracks.length > 0
+                  ? `${(safeIndex + 1).toString().padStart(2, "0")} / ${tracks.length
+                      .toString()
+                      .padStart(2, "0")}`
+                  : ""}
+              </span>
             </div>
 
-            <div className="flex min-w-44 items-center gap-2 text-sm text-[hsl(var(--muted))]">
-              <button
-                aria-label={isMuted ? "Unmute" : "Mute"}
-                className="grid size-9 place-items-center rounded-full border border-[hsl(var(--border)/0.6)] text-foreground transition hover:bg-[hsl(var(--surface-2))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--accent))]"
-                type="button"
-                onClick={toggleMute}
-              >
-                {isMuted ? (
-                  <VolumeX size={16} aria-hidden="true" />
-                ) : (
-                  <Volume2 size={16} aria-hidden="true" />
-                )}
-              </button>
-              <label className="relative flex h-2 w-full items-center">
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-0 rounded-full bg-[hsl(var(--surface-2))]"
-                />
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-y-0 left-0 rounded-full bg-[hsl(var(--foreground)/0.7)]"
-                  style={{ width: `${volume * 100}%` }}
-                />
-                <span className="sr-only">Volume</span>
-                <input
-                  aria-label="Volume"
-                  className="absolute inset-0 h-2 w-full cursor-pointer appearance-none bg-transparent"
-                  max={1}
-                  min={0}
-                  step={0.01}
-                  type="range"
-                  value={volume}
-                  onChange={(event) => setVolume(Number(event.target.value))}
-                />
-              </label>
-            </div>
+            <VolumeControl
+              isMuted={isMuted}
+              volume={volume}
+              onToggleMute={toggleMute}
+              onVolumeChange={setVolume}
+            />
           </div>
         </div>
       </div>
@@ -415,37 +400,131 @@ export function AudioPlayer({
   );
 }
 
-function AmbientGlow() {
+/* ---------------- Pieces ---------------- */
+
+function PlayerBackdrop() {
   return (
     <>
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-32 -right-24 size-72 rounded-full bg-[hsl(var(--accent-2)/0.25)] blur-3xl"
+        className="pointer-events-none absolute inset-0 opacity-90"
+        style={{
+          background:
+            "radial-gradient(120% 80% at 0% 0%, hsl(var(--mood) / 0.18), transparent 55%), radial-gradient(110% 80% at 100% 100%, hsl(var(--mood-2) / 0.18), transparent 60%)",
+        }}
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-40 -left-24 size-80 rounded-full bg-[hsl(var(--accent)/0.18)] blur-3xl"
+        className="pointer-events-none absolute inset-x-0 -bottom-px h-px bg-[linear-gradient(90deg,transparent,hsl(var(--mood)/0.5),transparent)]"
       />
     </>
   );
 }
 
-function PlayerEmblem({ isPlaying }: { isPlaying: boolean }) {
+function EmptyPlayer() {
   return (
-    <div className="relative mx-auto md:mx-0">
-      <div
-        aria-hidden="true"
-        className="relative grid aspect-square w-44 place-items-center rounded-full border border-white/10 bg-[radial-gradient(circle_at_30%_25%,rgba(255,255,255,0.22),transparent_22%),conic-gradient(from_140deg,hsl(var(--accent-2)/0.5),hsl(var(--surface-2))_45%,hsl(var(--accent)/0.45)_75%,hsl(var(--accent-2)/0.5))] shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_24px_60px_rgba(0,0,0,0.4)] animate-[spin_24s_linear_infinite] sm:w-48"
-        style={{ animationPlayState: isPlaying ? "running" : "paused" }}
-      >
-        <div className="grid size-20 place-items-center rounded-full bg-[hsl(var(--surface)/0.85)] backdrop-blur-md">
-          <div className="size-5 rounded-full bg-[hsl(var(--background))] shadow-inner" />
+    <section className="panel relative isolate overflow-hidden p-8 sm:p-12">
+      <PlayerBackdrop />
+      <div className="relative grid place-items-center gap-5 py-10 text-center">
+        <div className="grid size-20 place-items-center rounded-full border border-[hsl(var(--mood)/0.35)] bg-[hsl(var(--surface-2)/0.6)]">
+          <span
+            className="inline-flex h-7 items-end gap-[3px]"
+            aria-hidden="true"
+          >
+            <span className="eq-bar" style={{ animationDelay: "0ms" }} />
+            <span className="eq-bar" style={{ animationDelay: "180ms" }} />
+            <span className="eq-bar" style={{ animationDelay: "360ms" }} />
+            <span className="eq-bar" style={{ animationDelay: "120ms" }} />
+            <span className="eq-bar" style={{ animationDelay: "240ms" }} />
+          </span>
         </div>
+        <p className="kicker">Soundshelf · Tonight</p>
+        <h2 className="display-heading max-w-xl text-balance text-3xl font-semibold leading-tight sm:text-4xl">
+          Pick a record. Dim the lights.
+        </h2>
+        <p className="max-w-md text-sm leading-6 text-[hsl(var(--muted))]">
+          Choose a curated playlist and the room glows into its mood —
+          the player picks up its colours from whatever you press play on.
+        </p>
       </div>
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-white/5"
-      />
+    </section>
+  );
+}
+
+function Vinyl({ isPlaying }: { isPlaying: boolean }) {
+  return (
+    <div className="relative mx-auto w-full max-w-[260px] md:mx-0">
+      <div className="relative aspect-square">
+        {/* Outer halo */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 rounded-full opacity-70 blur-2xl"
+          style={{
+            background:
+              "radial-gradient(closest-side, hsl(var(--mood) / 0.5), transparent 70%)",
+          }}
+        />
+        {/* The disc itself */}
+        <div
+          aria-hidden="true"
+          className={`vinyl relative grid size-full place-items-center rounded-full ${
+            isPlaying ? "" : "[animation-play-state:paused]"
+          }`}
+          style={{
+            background: `
+              repeating-radial-gradient(
+                circle at 50% 50%,
+                hsl(0 0% 0%) 0,
+                hsl(28 18% 12%) 1px,
+                hsl(0 0% 0%) 2px,
+                hsl(28 18% 8%) 3px
+              ),
+              radial-gradient(circle at 32% 28%, hsl(var(--mood) / 0.25), transparent 35%),
+              radial-gradient(circle at 68% 72%, hsl(var(--mood-2) / 0.25), transparent 38%),
+              hsl(0 0% 4%)
+            `,
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,0.08), 0 30px 70px -20px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04)",
+          }}
+        >
+          {/* Highlight */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 rounded-full"
+            style={{
+              background:
+                "radial-gradient(circle at 28% 22%, rgba(255,255,255,0.18), transparent 30%)",
+              mixBlendMode: "screen",
+            }}
+          />
+          {/* Label */}
+          <div
+            className="relative grid size-[42%] place-items-center rounded-full"
+            style={{
+              background:
+                "linear-gradient(135deg, hsl(var(--mood)) 0%, hsl(var(--mood-2)) 100%)",
+              boxShadow:
+                "inset 0 1px 1px rgba(255,255,255,0.4), 0 8px 24px hsl(var(--mood) / 0.35)",
+            }}
+          >
+            <div
+              className="grid size-[36%] place-items-center rounded-full"
+              style={{
+                background: "hsl(var(--background))",
+                boxShadow:
+                  "inset 0 0 0 2px hsl(var(--foreground) / 0.25), 0 0 0 4px hsl(var(--mood) / 0.4)",
+              }}
+            >
+              <span className="size-1.5 rounded-full bg-[hsl(var(--foreground)/0.45)]" />
+            </div>
+          </div>
+        </div>
+        {/* Tonearm hint — subtle diagonal light */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-white/5"
+        />
+      </div>
     </div>
   );
 }
@@ -460,19 +539,19 @@ function PlayButton({
   return (
     <button
       aria-label={isPlaying ? "Pause" : "Play"}
-      className="grid size-16 place-items-center rounded-full bg-[linear-gradient(135deg,hsl(var(--accent)),hsl(var(--accent-2)))] text-slate-950 shadow-[0_0_0_8px_hsl(var(--accent)/0.12),0_18px_44px_hsl(var(--accent)/0.45)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-[hsl(var(--accent)/0.35)]"
+      className="grid size-14 place-items-center rounded-full bg-[linear-gradient(135deg,hsl(var(--mood)),hsl(var(--mood-2)))] text-[hsl(28_40%_8%)] shadow-[0_0_0_8px_hsl(var(--mood)/0.10),0_18px_44px_hsl(var(--mood)/0.45)] transition active:scale-95 hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-[hsl(var(--mood)/0.35)] sm:size-16"
       type="button"
       title={isPlaying ? "Pause" : "Play"}
       onClick={onToggle}
     >
       {isPlaying ? (
-        <Pause size={24} aria-hidden="true" fill="currentColor" />
+        <Pause size={22} aria-hidden="true" fill="currentColor" />
       ) : (
         <Play
-          size={24}
+          size={22}
           aria-hidden="true"
           fill="currentColor"
-          className="translate-x-0.5"
+          className="translate-x-[1px]"
         />
       )}
     </button>
@@ -496,7 +575,7 @@ function TransportButton({
     <button
       aria-label={label}
       aria-pressed={active || undefined}
-      className="grid size-11 place-items-center rounded-full border border-[hsl(var(--border)/0.6)] bg-[hsl(var(--surface-2)/0.5)] text-foreground transition hover:bg-[hsl(var(--surface-2))] focus:outline-none focus:ring-4 focus:ring-[hsl(var(--accent)/0.2)] disabled:cursor-not-allowed disabled:opacity-40 data-[active=true]:border-[hsl(var(--accent)/0.5)] data-[active=true]:bg-[hsl(var(--accent)/0.18)] data-[active=true]:text-[hsl(var(--accent))]"
+      className="grid size-10 place-items-center rounded-full text-[hsl(var(--muted))] transition hover:bg-[hsl(var(--surface-2)/0.7)] hover:text-foreground focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mood)/0.45)] disabled:cursor-not-allowed disabled:opacity-30 data-[active=true]:bg-[hsl(var(--mood)/0.16)] data-[active=true]:text-[hsl(var(--mood))]"
       data-active={active}
       disabled={disabled}
       title={label}
@@ -508,4 +587,53 @@ function TransportButton({
   );
 }
 
-
+function VolumeControl({
+  isMuted,
+  volume,
+  onToggleMute,
+  onVolumeChange,
+}: {
+  isMuted: boolean;
+  volume: number;
+  onToggleMute: () => void;
+  onVolumeChange: (next: number) => void;
+}) {
+  return (
+    <div className="flex min-w-[160px] items-center gap-2 text-sm text-[hsl(var(--muted))]">
+      <button
+        aria-label={isMuted ? "Unmute" : "Mute"}
+        className="grid size-9 place-items-center rounded-full text-[hsl(var(--muted))] transition hover:text-foreground focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mood)/0.45)]"
+        type="button"
+        onClick={onToggleMute}
+      >
+        {isMuted ? (
+          <VolumeX size={16} aria-hidden="true" />
+        ) : (
+          <Volume2 size={16} aria-hidden="true" />
+        )}
+      </button>
+      <label className="relative flex h-1.5 w-full items-center">
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 rounded-full bg-[hsl(var(--surface-3))]"
+        />
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-0 left-0 rounded-full bg-[hsl(var(--foreground)/0.65)]"
+          style={{ width: `${volume * 100}%` }}
+        />
+        <span className="sr-only">Volume</span>
+        <input
+          aria-label="Volume"
+          className="absolute inset-0 h-1.5 w-full cursor-pointer appearance-none bg-transparent"
+          max={1}
+          min={0}
+          step={0.01}
+          type="range"
+          value={volume}
+          onChange={(event) => onVolumeChange(Number(event.target.value))}
+        />
+      </label>
+    </div>
+  );
+}
