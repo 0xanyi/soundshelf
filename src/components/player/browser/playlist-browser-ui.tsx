@@ -3,10 +3,10 @@
 import {
   AlertCircle,
   ChevronDown,
-  Headphones,
   Music2,
   Play,
   RefreshCw,
+  X,
 } from "lucide-react";
 import type { CSSProperties } from "react";
 
@@ -48,14 +48,6 @@ export function BrandHeader() {
           </h1>
         </div>
       </div>
-
-      <a
-        className="group inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border)/0.7)] bg-[hsl(var(--surface)/0.5)] px-3.5 py-1.5 text-xs font-medium text-[hsl(var(--muted))] transition hover:border-[hsl(var(--mood)/0.4)] hover:text-foreground"
-        href="/admin"
-      >
-        <Headphones size={13} aria-hidden="true" className="opacity-80" />
-        <span>Admin</span>
-      </a>
     </header>
   );
 }
@@ -88,9 +80,9 @@ export function SectionHeading({
   );
 }
 
-/* ---------------- Playlist rail (mobile) ---------------- */
+/* ---------------- Playlist card library ---------------- */
 
-export function PlaylistRail({
+export function PlaylistCardLibrary({
   error,
   playlists,
   selectedPlaylistId,
@@ -108,14 +100,14 @@ export function PlaylistRail({
   if (state === "loading") {
     return (
       <div
-        className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4"
+        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         aria-busy="true"
       >
         {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={index}
             aria-hidden="true"
-            className="h-32 w-44 shrink-0 animate-pulse rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--surface-2)/0.6)]"
+            className="h-36 animate-pulse rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--surface-2)/0.6)]"
           />
         ))}
       </div>
@@ -143,18 +135,17 @@ export function PlaylistRail({
   }
 
   return (
-    <div className="-mx-4 px-4">
-      <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1 scroll-fade">
-        {playlists.map((playlist) => (
+    <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" role="list">
+      {playlists.map((playlist) => (
+        <li key={playlist.id} className="min-w-0">
           <PlaylistCard
-            key={playlist.id}
             isSelected={playlist.id === selectedPlaylistId}
             playlist={playlist}
             onClick={() => onSelect(playlist.id)}
           />
-        ))}
-      </div>
-    </div>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -175,21 +166,21 @@ function PlaylistCard({
       data-selected={isSelected}
       aria-pressed={isSelected}
       style={mood.cssVars as CSSProperties}
-      className="group relative w-44 shrink-0 snap-start overflow-hidden rounded-2xl border border-[hsl(var(--border)/0.7)] bg-[hsl(var(--surface)/0.6)] p-4 text-left transition focus:outline-none focus:ring-4 focus:ring-[hsl(var(--mood)/0.25)] data-[selected=true]:border-[hsl(var(--mood)/0.5)] data-[selected=true]:bg-[hsl(var(--surface-2)/0.85)]"
+      className="group relative min-h-36 w-full overflow-hidden rounded-2xl border border-[hsl(var(--border)/0.7)] bg-[hsl(var(--surface)/0.6)] p-4 text-left transition hover:-translate-y-0.5 hover:border-[hsl(var(--mood)/0.35)] hover:bg-[hsl(var(--surface-2)/0.72)] focus:outline-none focus:ring-4 focus:ring-[hsl(var(--mood)/0.25)] data-[selected=true]:border-[hsl(var(--mood)/0.6)] data-[selected=true]:bg-[hsl(var(--surface-2)/0.9)]"
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-70"
+        className="pointer-events-none absolute inset-0 opacity-75"
         style={{
           background:
-            "radial-gradient(120% 120% at 0% 0%, hsl(var(--mood) / 0.22), transparent 55%)",
+            "radial-gradient(120% 120% at 0% 0%, hsl(var(--mood) / 0.24), transparent 58%), radial-gradient(90% 90% at 100% 100%, hsl(var(--mood-2) / 0.12), transparent 60%)",
         }}
       />
-      <div className="relative flex flex-col gap-3">
+      <div className="relative flex min-h-28 flex-col justify-between gap-5">
         <div className="flex items-center justify-between">
           <span
             aria-hidden="true"
-            className="grid size-9 place-items-center rounded-full"
+            className="grid size-10 place-items-center rounded-full"
             style={{
               background:
                 "linear-gradient(135deg, hsl(var(--mood)) 0%, hsl(var(--mood-2)) 100%)",
@@ -207,9 +198,16 @@ function PlaylistCard({
             {playlist.itemCount.toString().padStart(2, "0")} tracks
           </span>
         </div>
-        <h3 className="display-heading line-clamp-2 text-base font-semibold leading-tight">
-          {playlist.title}
-        </h3>
+        <div className="min-w-0">
+          <h3 className="display-heading line-clamp-2 text-xl font-semibold leading-tight">
+            {playlist.title}
+          </h3>
+          {playlist.description ? (
+            <p className="mt-2 line-clamp-2 text-sm leading-5 text-[hsl(var(--muted))]">
+              {playlist.description}
+            </p>
+          ) : null}
+        </div>
       </div>
     </button>
   );
@@ -489,6 +487,110 @@ function ExpandedTrackList({
         />
       ))}
     </ol>
+  );
+}
+
+/* ---------------- Player queue popover ---------------- */
+
+export function PlaylistQueuePanel({
+  currentIndex,
+  description,
+  error,
+  playlist,
+  state,
+  title,
+  totalDurationSeconds,
+  onClose,
+  onRetry,
+  onSelectTrack,
+}: {
+  currentIndex: number;
+  description: string | null;
+  error: string | null;
+  playlist: PublicPlaylistDetail | null;
+  state: LoadState;
+  title: string | null;
+  totalDurationSeconds: number;
+  onClose: () => void;
+  onRetry: () => void;
+  onSelectTrack: (index: number) => void;
+}) {
+  return (
+    <div className="flex max-h-full flex-col">
+      <div className="flex items-start gap-3 border-b border-[hsl(var(--border)/0.55)] px-4 py-4">
+        <div className="min-w-0 flex-1">
+          <p className="kicker">Playlist</p>
+          <h3 className="display-heading mt-1 truncate text-xl font-semibold">
+            {title ?? "Pick a playlist"}
+          </h3>
+          {playlist?.tracks.length ? (
+            <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--muted))]">
+              {playlist.tracks.length.toString().padStart(2, "0")} tracks ·{" "}
+              {formatTotalDuration(totalDurationSeconds)}
+            </p>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          aria-label="Close playlist"
+          className="grid size-9 shrink-0 place-items-center rounded-full border border-[hsl(var(--border)/0.6)] bg-[hsl(var(--surface-3)/0.5)] text-[hsl(var(--muted))] transition hover:text-foreground focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mood)/0.4)]"
+          onClick={onClose}
+        >
+          <X size={15} aria-hidden="true" />
+        </button>
+      </div>
+
+      <div className="min-h-0 overflow-y-auto px-3 py-3">
+        {description ? (
+          <p className="mb-3 px-2 text-sm leading-6 text-[hsl(var(--muted))]">
+            {description}
+          </p>
+        ) : null}
+
+        {state === "loading" ? (
+          <div className="grid gap-1.5" aria-busy="true">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={index}
+                aria-hidden="true"
+                className="h-14 animate-pulse rounded-2xl bg-[hsl(var(--surface-3)/0.5)]"
+              />
+            ))}
+            <span className="sr-only">Loading tracks...</span>
+          </div>
+        ) : null}
+
+        {state === "error" ? (
+          <InlineError
+            actionLabel="Retry"
+            message={error ?? "Unable to load this playlist."}
+            onAction={onRetry}
+          />
+        ) : null}
+
+        {state === "idle" && playlist?.tracks.length === 0 ? (
+          <div className="grid place-items-center gap-3 px-4 py-12 text-center text-sm text-[hsl(var(--muted))]">
+            <Music2 size={20} aria-hidden="true" />
+            <p>This playlist has no playable tracks yet.</p>
+          </div>
+        ) : null}
+
+        {playlist?.tracks.length ? (
+          <ol className="grid gap-1" role="list">
+            {playlist.tracks.map((track, index) => (
+              <TrackRow
+                key={track.playlistItemId}
+                isActive={index === currentIndex}
+                index={index}
+                track={track}
+                onClick={() => onSelectTrack(index)}
+                showDescription
+              />
+            ))}
+          </ol>
+        ) : null}
+      </div>
+    </div>
   );
 }
 

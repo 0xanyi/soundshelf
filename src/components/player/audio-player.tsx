@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ListMusic,
   Pause,
   Play,
   Repeat,
@@ -32,7 +33,10 @@ type AudioPlayerProps = {
   tracks: PlayerTrack[];
   currentIndex: number;
   onCurrentIndexChange: (nextIndex: number) => void;
+  isQueueOpen?: boolean;
+  onToggleQueue?: () => void;
   playlistTitle?: string | null;
+  queuePanel?: React.ReactNode;
   /**
    * Called when the audio element resolves a real duration that differs
    * from the metadata we received from the API. Used to self-heal tracks
@@ -45,7 +49,10 @@ export function AudioPlayer({
   tracks,
   currentIndex,
   onCurrentIndexChange,
+  isQueueOpen = false,
+  onToggleQueue,
   playlistTitle,
+  queuePanel,
   onDurationDiscovered,
 }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -277,7 +284,7 @@ export function AudioPlayer({
             </div>
 
             <h2
-              className="display-heading text-balance text-2xl font-semibold leading-[1.1] sm:text-3xl md:text-4xl"
+              className="max-w-xl text-balance font-sans text-xl font-normal leading-tight text-[hsl(var(--foreground)/0.92)] sm:text-2xl md:text-[28px]"
               key={currentTrack.id}
             >
               <span className="rise-in inline-block">{currentTrack.title}</span>
@@ -353,6 +360,14 @@ export function AudioPlayer({
           <div className="flex flex-wrap items-center justify-between gap-5">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <TransportButton
+                active={isQueueOpen}
+                disabled={!queuePanel}
+                label={isQueueOpen ? "Hide playlist" : "Show playlist"}
+                onClick={() => onToggleQueue?.()}
+              >
+                <ListMusic size={17} aria-hidden="true" />
+              </TransportButton>
+              <TransportButton
                 active={repeatMode !== "off"}
                 label={repeatLabel}
                 onClick={cycleRepeatMode}
@@ -396,6 +411,11 @@ export function AudioPlayer({
           </div>
         </div>
       </div>
+      {isQueueOpen && queuePanel ? (
+        <div className="absolute inset-x-3 bottom-3 z-20 max-h-[calc(100%-1.5rem)] overflow-hidden rounded-2xl border border-[hsl(var(--border)/0.7)] bg-[hsl(var(--surface)/0.96)] shadow-[0_22px_80px_-28px_hsl(var(--background))] backdrop-blur-xl sm:inset-x-auto sm:right-4 sm:top-4 sm:w-80">
+          {queuePanel}
+        </div>
+      ) : null}
     </section>
   );
 }

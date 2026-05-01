@@ -6,10 +6,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AudioPlayer, type PlayerTrack } from "@/components/player/audio-player";
 import {
   BrandHeader,
-  PlaylistList,
-  PlaylistRail,
-  SectionHeading,
-  TracksAccordion,
+  PlaylistCardLibrary,
+  PlaylistQueuePanel,
 } from "@/components/player/browser/playlist-browser-ui";
 import type {
   LoadState,
@@ -29,7 +27,7 @@ export function PlaylistBrowser() {
   const [detailError, setDetailError] = useState<string | null>(null);
   const [detailReloadKey, setDetailReloadKey] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTracksOpen, setIsTracksOpen] = useState(true);
+  const [isTracksOpen, setIsTracksOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -103,7 +101,6 @@ export function PlaylistBrowser() {
 
         setSelectedPlaylist(playlist);
         setCurrentIndex(0);
-        setIsTracksOpen(true);
         setDetailState("idle");
       } catch (error) {
         if (controller.signal.aborted) {
@@ -184,7 +181,11 @@ export function PlaylistBrowser() {
 
   const handleSelectTrack = useCallback((index: number) => {
     setCurrentIndex(index);
-    setIsTracksOpen(true);
+  }, []);
+
+  const handleSelectPlaylist = useCallback((playlistId: string) => {
+    setSelectedPlaylistId(playlistId);
+    setIsTracksOpen(false);
   }, []);
 
   return (
@@ -192,88 +193,60 @@ export function PlaylistBrowser() {
       className="relative min-h-screen text-foreground"
       style={mood.cssVars as CSSProperties}
     >
-      <div className="mx-auto w-full max-w-[1320px] px-4 pb-24 pt-5 sm:px-6 lg:px-10 lg:pt-8">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1320px] flex-col px-4 pt-5 sm:px-6 lg:px-10 lg:pt-8">
         <BrandHeader />
 
-        {/* MOBILE: horizontal rail of playlist cards */}
-        <section className="mt-6 lg:hidden">
-          <SectionHeading
-            count={playlists.length}
-            kicker="Library"
-            title="Tonight's selections"
-          />
-          <PlaylistRail
-            error={listError}
-            playlists={playlists}
-            selectedPlaylistId={selectedPlaylistId}
-            state={listState}
-            onRetry={() => window.location.reload()}
-            onSelect={setSelectedPlaylistId}
-          />
-        </section>
-
-        {/* MAIN GRID */}
-        <div className="mt-6 grid gap-6 lg:mt-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-10">
-          {/* DESKTOP sidebar with inline-expandable playlists */}
-          <aside className="hidden lg:block">
-            <div className="lg:sticky lg:top-8">
-              <SectionHeading
-                count={playlists.length}
-                kicker="Library"
-                title="Selections"
-              />
-              <PlaylistList
-                currentTrackIndex={currentIndex}
-                description={currentPlaylistDescription}
-                detailError={detailError}
-                detailState={detailState}
-                error={listError}
-                isTracksOpen={isTracksOpen}
-                playlist={selectedPlaylist}
-                playlists={playlists}
-                selectedPlaylistId={selectedPlaylistId}
-                state={listState}
-                totalDurationSeconds={totalDurationSeconds}
-                onRetry={() => window.location.reload()}
-                onRetryDetail={() => setDetailReloadKey((key) => key + 1)}
-                onSelect={setSelectedPlaylistId}
-                onSelectTrack={handleSelectTrack}
-                onToggleTracks={() => setIsTracksOpen((open) => !open)}
-              />
-            </div>
-          </aside>
-
-          {/* RIGHT COLUMN: player + (mobile) tracks accordion */}
-          <section className="flex min-w-0 flex-col gap-6 lg:gap-8">
+        <div className="mt-6 grid gap-8 lg:mt-10 lg:gap-10">
+          <section className="mx-auto flex w-full max-w-[1040px] min-w-0 flex-col">
             <AudioPlayer
               key={selectedPlaylist?.id ?? "empty-player"}
               currentIndex={currentIndex}
+              isQueueOpen={isTracksOpen}
               playlistTitle={currentPlaylistTitle ?? undefined}
+              queuePanel={
+                <PlaylistQueuePanel
+                  currentIndex={currentIndex}
+                  description={currentPlaylistDescription}
+                  error={detailError}
+                  playlist={selectedPlaylist}
+                  state={detailState}
+                  title={currentPlaylistTitle}
+                  totalDurationSeconds={totalDurationSeconds}
+                  onClose={() => setIsTracksOpen(false)}
+                  onRetry={() => setDetailReloadKey((key) => key + 1)}
+                  onSelectTrack={handleSelectTrack}
+                />
+              }
               tracks={selectedPlaylist?.tracks ?? []}
               onCurrentIndexChange={handleSelectTrack}
+              onToggleQueue={() => setIsTracksOpen((open) => !open)}
               onDurationDiscovered={handleDurationDiscovered}
             />
+          </section>
 
-            {/* MOBILE: collapsible tracks below the player */}
-            <div className="lg:hidden">
-              <TracksAccordion
-                currentIndex={currentIndex}
-                description={currentPlaylistDescription}
-                error={detailError}
-                isOpen={isTracksOpen}
-                playlist={selectedPlaylist}
-                state={detailState}
-                title={currentPlaylistTitle}
-                totalDurationSeconds={totalDurationSeconds}
-                onRetry={() => setDetailReloadKey((key) => key + 1)}
-                onSelectTrack={handleSelectTrack}
-                onToggle={() => setIsTracksOpen((open) => !open)}
-              />
+          <section>
+            <div className="mb-4 flex items-end justify-between gap-3">
+              <p className="kicker">Library</p>
+              <span className="font-mono text-[11px] uppercase tracking-[0.24em] text-[hsl(var(--muted))]">
+                {playlists.length.toString().padStart(2, "0")} playlist
+                {playlists.length === 1 ? "" : "s"}
+              </span>
             </div>
+            <PlaylistCardLibrary
+              error={listError}
+              playlists={playlists}
+              selectedPlaylistId={selectedPlaylistId}
+              state={listState}
+              onRetry={() => window.location.reload()}
+              onSelect={handleSelectPlaylist}
+            />
           </section>
         </div>
+
+        <footer className="mt-auto border-t border-[hsl(var(--border)/0.45)] pt-6 text-center font-mono text-[10px] uppercase tracking-[0.24em] text-[hsl(var(--muted))]">
+          Copyright 2026 SoundShelf. All rights reserved.
+        </footer>
       </div>
     </main>
   );
 }
-
