@@ -277,7 +277,7 @@ export function AudioPlayer({
             </div>
 
             <h2
-              className="display-heading text-balance text-3xl font-semibold leading-[1.05] sm:text-4xl md:text-5xl"
+              className="display-heading text-balance text-2xl font-semibold leading-[1.1] sm:text-3xl md:text-4xl"
               key={currentTrack.id}
             >
               <span className="rise-in inline-block">{currentTrack.title}</span>
@@ -467,10 +467,9 @@ function Vinyl({ isPlaying }: { isPlaying: boolean }) {
         {/* The disc itself */}
         <div
           aria-hidden="true"
-          className={`vinyl relative grid size-full place-items-center rounded-full ${
-            isPlaying ? "" : "[animation-play-state:paused]"
-          }`}
+          className="vinyl relative grid size-full place-items-center rounded-full"
           style={{
+            animationPlayState: isPlaying ? "running" : "paused",
             background: `
               repeating-radial-gradient(
                 circle at 50% 50%,

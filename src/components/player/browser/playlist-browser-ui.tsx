@@ -37,13 +37,13 @@ export function BrandHeader() {
           <BrandIcon className="size-5" />
         </span>
         <div className="min-w-0 leading-tight">
-          <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-[hsl(var(--mood))]">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-[hsl(var(--mood))] sm:text-xs">
             Soundshelf
           </p>
-          <h1 className="display-heading hidden text-base font-semibold sm:block sm:text-lg">
+          <h1 className="hidden font-sans text-xs font-normal leading-snug text-[hsl(var(--foreground)/0.88)] sm:block sm:text-sm">
             Curated audio, beautifully played.
           </h1>
-          <h1 className="display-heading text-base font-semibold sm:hidden">
+          <h1 className="font-sans text-xs font-normal leading-snug text-[hsl(var(--foreground)/0.88)] sm:hidden">
             Curated audio.
           </h1>
         </div>
