@@ -15,7 +15,7 @@ export default defineConfig({
       BETTER_AUTH_URL: "http://localhost:3000",
       DATABASE_URL:
         process.env.DATABASE_URL ??
-        "postgresql://postgres:postgres@localhost:5432/prayer_tunes",
+        "postgresql://postgres:postgres@localhost:5432/soundshelf",
       MAX_AUDIO_UPLOAD_BYTES: "52428800",
       NEXT_PUBLIC_APP_URL: "http://localhost:3000",
       NEXT_TELEMETRY_DISABLED: "1",

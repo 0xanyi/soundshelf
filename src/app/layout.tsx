@@ -3,8 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Prayer Tunes",
-  description: "Public prayer tune playlists.",
+  title: "SoundShelf",
+  description: "Public curated audio playlists.",
 };
 
 const geistSans = Geist({

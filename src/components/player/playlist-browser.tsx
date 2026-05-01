@@ -132,7 +132,7 @@ export function PlaylistBrowser() {
         <aside className="rounded-lg border border-black/10 bg-white shadow-sm">
           <div className="border-b border-black/10 px-5 py-4">
             <p className="text-xs font-medium uppercase tracking-wide text-accent">
-              Prayer Tunes
+              SoundShelf
             </p>
             <h1 className="mt-1 text-2xl font-semibold">Published Playlists</h1>
           </div>

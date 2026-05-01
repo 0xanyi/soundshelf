@@ -1,6 +1,6 @@
-# Prayer Tunes
+# SoundShelf
 
-Prayer Tunes is a Next.js app for publishing and playing curated prayer tune playlists. PostgreSQL stores app and auth data through Prisma, Better Auth handles admin sessions, and uploaded audio stays in Cloudflare R2.
+SoundShelf is a Next.js app for publishing and playing curated audio playlists. PostgreSQL stores app and auth data through Prisma, Better Auth handles admin sessions, and uploaded audio stays in Cloudflare R2.
 
 ## Local Setup
 
@@ -37,7 +37,7 @@ Prayer Tunes is a Next.js app for publishing and playing curated prayer tune pla
    ```bash
    ADMIN_EMAIL=admin@example.com \
    ADMIN_PASSWORD='replace-with-a-strong-admin-password' \
-   ADMIN_NAME='Prayer Tunes Admin' \
+   ADMIN_NAME='SoundShelf Admin' \
    npm run db:seed
    ```
 
@@ -48,7 +48,7 @@ Prayer Tunes is a Next.js app for publishing and playing curated prayer tune pla
 Build the production image:
 
 ```bash
-docker build -t prayer-tunes .
+docker build -t soundshelf .
 ```
 
 Run the app with the included PostgreSQL service:
@@ -78,7 +78,7 @@ The compose file wires R2 environment variables through from your shell or `.env
    NEXT_PUBLIC_APP_URL=https://your-domain.example
    ADMIN_EMAIL=admin@example.com
    ADMIN_PASSWORD=<strong-initial-admin-password>
-   ADMIN_NAME="Prayer Tunes Admin"
+   ADMIN_NAME="SoundShelf Admin"
    R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
    R2_ACCESS_KEY_ID=<r2-access-key-id>
    R2_SECRET_ACCESS_KEY=<r2-secret-access-key>
@@ -125,7 +125,7 @@ npm run typecheck
 npm run lint
 npm test
 npm run test:e2e
-docker build -t prayer-tunes .
+docker build -t soundshelf .
 ```
 
 The E2E suite currently uses mocked public data and does not cover the real R2 upload path or a full Postgres-backed Better Auth flow.

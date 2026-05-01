@@ -46,7 +46,7 @@ function LinkHeading() {
   return (
     <div>
       <p className="text-xs font-medium uppercase tracking-wide text-accent">
-        Prayer Tunes
+        SoundShelf
       </p>
       <h1 className="text-xl font-semibold">Admin</h1>
     </div>

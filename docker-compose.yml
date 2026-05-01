@@ -3,11 +3,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: prayer-tunes:local
+    image: soundshelf:local
     command: npm run db:deploy
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/prayer_tunes
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/soundshelf
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-replace-with-a-strong-32-character-secret}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
@@ -25,12 +25,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: prayer-tunes:local
+    image: soundshelf:local
     ports:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/prayer_tunes
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/soundshelf
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-replace-with-a-strong-32-character-secret}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
@@ -49,7 +49,7 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: prayer_tunes
+      POSTGRES_DB: soundshelf
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
@@ -57,7 +57,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d prayer_tunes"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d soundshelf"]
       interval: 10s
       timeout: 5s
       retries: 5

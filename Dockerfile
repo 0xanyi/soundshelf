@@ -14,7 +14,7 @@ RUN npm ci
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN DATABASE_URL="postgresql://postgres:postgres@localhost:5432/prayer_tunes" \
+RUN DATABASE_URL="postgresql://postgres:postgres@localhost:5432/soundshelf" \
   BETTER_AUTH_SECRET="build-time-placeholder-secret-32-chars" \
   BETTER_AUTH_URL="http://localhost:3000" \
   NEXT_PUBLIC_APP_URL="http://localhost:3000" \

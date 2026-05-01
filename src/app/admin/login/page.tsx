@@ -24,7 +24,7 @@ export default async function AdminLoginPage() {
         </p>
         <h1 className="text-3xl font-semibold">Sign in</h1>
         <p className="mt-3 text-sm leading-6 text-muted">
-          Use your administrator account to manage prayer tunes and playlists.
+          Use your administrator account to manage audio and playlists.
         </p>
         <div className="mt-8 rounded-lg border border-foreground/10 bg-white p-6 shadow-sm">
           <LoginForm />
