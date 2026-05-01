@@ -14,9 +14,9 @@ describe("serializePublicPlaylistSummary", () => {
         description: "Start of day",
         updatedAt: new Date("2026-04-01T08:00:00.000Z"),
         items: [
-          { tune: { status: "active" } },
-          { tune: { status: "draft" } },
-          { tune: { status: "active" } },
+          { tune: { durationSeconds: 120, status: "active" } },
+          { tune: { durationSeconds: 80, status: "draft" } },
+          { tune: { durationSeconds: 90, status: "active" } },
         ],
       }),
     ).toEqual({
@@ -24,6 +24,7 @@ describe("serializePublicPlaylistSummary", () => {
       title: "Morning",
       description: "Start of day",
       itemCount: 2,
+      durationSeconds: 210,
     });
   });
 });

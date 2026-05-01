@@ -23,6 +23,7 @@ export async function GET(): Promise<Response> {
         select: {
           tune: {
             select: {
+              durationSeconds: true,
               status: true,
             },
           },

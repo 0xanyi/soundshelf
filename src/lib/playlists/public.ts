@@ -7,6 +7,7 @@ export type PublicPlaylistSummaryRecord = {
   updatedAt: Date;
   items: Array<{
     tune: {
+      durationSeconds: number;
       status: TuneStatus;
     };
   }>;
@@ -37,6 +38,7 @@ export type SerializedPublicPlaylistSummary = {
   title: string;
   description: string | null;
   itemCount: number;
+  durationSeconds: number;
 };
 
 export type SerializedPublicTrack = {
@@ -52,6 +54,8 @@ export type SerializedPublicPlaylistDetail = {
   id: string;
   title: string;
   description: string | null;
+  itemCount: number;
+  durationSeconds: number;
   tracks: SerializedPublicTrack[];
 };
 
@@ -60,11 +64,17 @@ type SignAudioUrl = (key: string) => Promise<string>;
 export function serializePublicPlaylistSummary(
   playlist: PublicPlaylistSummaryRecord,
 ): SerializedPublicPlaylistSummary {
+  const activeItems = playlist.items.filter((item) => item.tune.status === "active");
+
   return {
     id: playlist.id,
     title: playlist.title,
     description: playlist.description,
-    itemCount: playlist.items.filter((item) => item.tune.status === "active").length,
+    itemCount: activeItems.length,
+    durationSeconds: activeItems.reduce(
+      (total, item) => total + Math.max(item.tune.durationSeconds, 0),
+      0,
+    ),
   };
 }
 
@@ -108,6 +118,11 @@ export async function serializePublicPlaylistDetail(
     id: playlist.id,
     title: playlist.title,
     description: playlist.description,
+    itemCount: tracks.length,
+    durationSeconds: tracks.reduce(
+      (total, track) => total + Math.max(track.durationSeconds, 0),
+      0,
+    ),
     tracks,
   };
 }

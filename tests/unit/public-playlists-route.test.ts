@@ -23,7 +23,7 @@ describe("GET /api/public/playlists", () => {
         title: "Active",
         description: null,
         updatedAt: new Date("2026-04-02T19:00:00.000Z"),
-        items: [{ tune: { status: "active" } }],
+        items: [{ tune: { durationSeconds: 90, status: "active" } }],
       },
       {
         id: "playlist-empty",
@@ -37,7 +37,7 @@ describe("GET /api/public/playlists", () => {
         title: "Draft only",
         description: null,
         updatedAt: new Date("2026-04-01T18:00:00.000Z"),
-        items: [{ tune: { status: "draft" } }],
+        items: [{ tune: { durationSeconds: 45, status: "draft" } }],
       },
     ];
 
@@ -53,6 +53,7 @@ describe("GET /api/public/playlists", () => {
           title: "Active",
           description: null,
           itemCount: 1,
+          durationSeconds: 90,
         },
       ],
     });

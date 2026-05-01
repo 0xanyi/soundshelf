@@ -195,7 +195,7 @@ function PlaylistCard({
             )}
           </span>
           <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-[hsl(var(--muted))]">
-            {playlist.itemCount.toString().padStart(2, "0")} tracks
+            {formatTotalDuration(playlist.durationSeconds)}
           </span>
         </div>
         <div className="min-w-0">

@@ -5,6 +5,7 @@ export type PublicPlaylistSummary = {
   title: string;
   description: string | null;
   itemCount: number;
+  durationSeconds: number;
 };
 
 export type PublicPlaylistDetail = PublicPlaylistSummary & {

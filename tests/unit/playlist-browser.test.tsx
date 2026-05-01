@@ -54,12 +54,14 @@ describe("PlaylistBrowser", () => {
                 title: "Morning",
                 description: null,
                 itemCount: 1,
+                durationSeconds: 90,
               },
               {
                 id: "playlist-evening",
                 title: "Evening",
                 description: null,
                 itemCount: 1,
+                durationSeconds: 120,
               },
             ],
           }),
@@ -73,6 +75,7 @@ describe("PlaylistBrowser", () => {
             title: "Morning",
             description: null,
             itemCount: 1,
+            durationSeconds: 90,
             tracks: [
               {
                 id: "track-old",
@@ -126,12 +129,14 @@ describe("PlaylistBrowser", () => {
                 title: "Morning",
                 description: null,
                 itemCount: 1,
+                durationSeconds: 90,
               },
               {
                 id: "playlist-evening",
                 title: "Evening",
                 description: null,
                 itemCount: 1,
+                durationSeconds: 120,
               },
             ],
           }),
@@ -152,6 +157,7 @@ describe("PlaylistBrowser", () => {
             title: "Evening",
             description: null,
             itemCount: 1,
+            durationSeconds: 120,
             tracks: [
               {
                 id: "track-new",
@@ -185,6 +191,7 @@ describe("PlaylistBrowser", () => {
       title: "Morning",
       description: null,
       itemCount: 1,
+      durationSeconds: 90,
       tracks: [
         {
           id: "track-old",

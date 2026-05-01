@@ -197,7 +197,7 @@ export function PlaylistBrowser() {
         <BrandHeader />
 
         <div className="mt-6 grid gap-8 lg:mt-10 lg:gap-10">
-          <section className="mx-auto flex w-full max-w-[1040px] min-w-0 flex-col">
+          <section className="flex w-full min-w-0 flex-col">
             <AudioPlayer
               key={selectedPlaylist?.id ?? "empty-player"}
               currentIndex={currentIndex}
@@ -225,12 +225,8 @@ export function PlaylistBrowser() {
           </section>
 
           <section>
-            <div className="mb-4 flex items-end justify-between gap-3">
+            <div className="mb-4">
               <p className="kicker">Library</p>
-              <span className="font-mono text-[11px] uppercase tracking-[0.24em] text-[hsl(var(--muted))]">
-                {playlists.length.toString().padStart(2, "0")} playlist
-                {playlists.length === 1 ? "" : "s"}
-              </span>
             </div>
             <PlaylistCardLibrary
               error={listError}

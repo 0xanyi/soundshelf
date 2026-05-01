@@ -23,7 +23,7 @@ type PlaylistSummarySeed = {
   status: "draft" | "published";
   createdAt: Date;
   updatedAt: Date;
-  items: Array<{ tune: { status: "draft" | "active" } }>;
+  items: Array<{ tune: { durationSeconds: number; status: "draft" | "active" } }>;
 };
 
 type PlaylistDetailSeed = PlaylistSummarySeed & {
@@ -58,8 +58,8 @@ describe("public playlist integration", () => {
         createdAt: new Date("2026-04-01T08:00:00.000Z"),
         updatedAt: new Date("2026-04-03T08:00:00.000Z"),
         items: [
-          { tune: { status: "active" } },
-          { tune: { status: "draft" } },
+          { tune: { durationSeconds: 123, status: "active" } },
+          { tune: { durationSeconds: 99, status: "draft" } },
         ],
       },
       {
@@ -69,7 +69,7 @@ describe("public playlist integration", () => {
         status: "draft",
         createdAt: new Date("2026-04-02T08:00:00.000Z"),
         updatedAt: new Date("2026-04-04T08:00:00.000Z"),
-        items: [{ tune: { status: "active" } }],
+        items: [{ tune: { durationSeconds: 88, status: "active" } }],
       },
       {
         id: "playlist-inactive-only",
@@ -78,7 +78,7 @@ describe("public playlist integration", () => {
         status: "published",
         createdAt: new Date("2026-04-03T08:00:00.000Z"),
         updatedAt: new Date("2026-04-05T08:00:00.000Z"),
-        items: [{ tune: { status: "draft" } }],
+        items: [{ tune: { durationSeconds: 77, status: "draft" } }],
       },
     ];
 
@@ -112,6 +112,7 @@ describe("public playlist integration", () => {
           title: "Published morning",
           description: "Playable",
           itemCount: 1,
+          durationSeconds: 123,
         },
       ],
     });
@@ -191,6 +192,8 @@ describe("public playlist integration", () => {
       id: "playlist-published",
       title: "Published morning",
       description: "Playable",
+      itemCount: 1,
+      durationSeconds: 123,
       tracks: [
         {
           id: "tune-active",

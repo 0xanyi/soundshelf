@@ -24,6 +24,7 @@ test.describe("admin and public smoke flow", () => {
               title: "Task 9 Published Smoke",
               description: "Mocked public playlist data for deterministic E2E.",
               itemCount: 1,
+              durationSeconds: 90,
             },
           ],
         }),
