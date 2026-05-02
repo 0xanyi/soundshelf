@@ -1,6 +1,12 @@
 import { db } from "@/lib/db";
-import { jsonError, requireAdminSession } from "@/lib/http/errors";
+import {
+  enforceSameOrigin,
+  jsonError,
+  recordAudit,
+  requireAdminSession,
+} from "@/lib/http/errors";
 import { buildTuneObjectKey, deleteAudioObject, putAudioObject } from "@/lib/r2";
+import { serializeAdminTune } from "@/lib/tunes/admin";
 import {
   validateAudioContentLength,
   validateAudioFileMetadata,
@@ -9,6 +15,9 @@ import {
 export const runtime = "nodejs";
 
 export async function POST(request: Request): Promise<Response> {
+  const csrf = await enforceSameOrigin(request);
+  if (csrf) return csrf;
+
   const session = await requireAdminSession();
 
   if (!session) {
@@ -71,16 +80,38 @@ export async function POST(request: Request): Promise<Response> {
     const tune = await db.tune.create({
       data: {
         title: getInitialTitle(uploadedFile.name),
-        description: null,
         durationSeconds,
         mimeType: uploadedFile.type,
         fileSizeBytes: BigInt(uploadedFile.size),
         r2ObjectKey: objectKey,
-        status: "draft",
+      },
+      select: {
+        id: true,
+        title: true,
+        durationSeconds: true,
+        mimeType: true,
+        fileSizeBytes: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: {
+          select: { playlistItems: true },
+        },
       },
     });
 
-    return Response.json(serializeTune(tune), { status: 201 });
+    await recordAudit({
+      actorId: session.userId,
+      action: "tune.upload",
+      resource: "tune",
+      resourceId: tune.id,
+      metadata: {
+        title: tune.title,
+        mimeType: tune.mimeType,
+        durationSeconds,
+      },
+    });
+
+    return Response.json(serializeAdminTune(tune), { status: 201 });
   } catch (error) {
     console.error("Failed to create tune record", error);
 
@@ -142,9 +173,4 @@ function parseDurationField(field: FormDataEntryValue | null): number {
   return Math.min(MAX_DURATION_SECONDS, Math.round(value));
 }
 
-function serializeTune<Tune extends { fileSizeBytes: bigint }>(tune: Tune) {
-  return {
-    ...tune,
-    fileSizeBytes: tune.fileSizeBytes.toString(),
-  };
-}
+

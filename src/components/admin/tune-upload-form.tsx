@@ -50,7 +50,7 @@ export function TuneUploadForm() {
 
       setMessage({
         type: "success",
-        text: "Upload complete. The tune was saved as a draft.",
+        text: "Upload complete. Song is live.",
       });
       setSelectedFile(null);
 

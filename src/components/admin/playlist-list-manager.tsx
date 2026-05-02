@@ -1,14 +1,14 @@
 "use client";
 
-import { ExternalLink, ListMusic, Plus, Trash2 } from "lucide-react";
+import { Eye, EyeOff, ExternalLink, ListMusic, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import type { SerializedAdminPlaylist } from "@/lib/playlists/admin";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDate } from "@/lib/format";
+import { readError } from "@/lib/http/client";
 
 type PlaylistListManagerProps = {
   playlists: SerializedAdminPlaylist[];
@@ -18,7 +18,6 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<"draft" | "published">("draft");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -32,7 +31,7 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
       const response = await fetch("/api/admin/playlists", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title, description, status }),
+        body: JSON.stringify({ title, description }),
       });
 
       if (!response.ok) {
@@ -41,7 +40,6 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
 
       setTitle("");
       setDescription("");
-      setStatus("draft");
       setMessage("Playlist created.");
       router.refresh();
     } catch (error) {
@@ -50,33 +48,6 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
       );
     } finally {
       setIsCreating(false);
-    }
-  }
-
-  async function updateStatus(playlistId: string, nextStatus: "draft" | "published") {
-    setPendingId(playlistId);
-    setMessage(null);
-
-    try {
-      const response = await fetch(
-        `/api/admin/playlists/${encodeURIComponent(playlistId)}`,
-        {
-          method: "PATCH",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ status: nextStatus }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(await readError(response));
-      }
-
-      setMessage("Playlist status saved.");
-      router.refresh();
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Status could not be saved.");
-    } finally {
-      setPendingId(null);
     }
   }
 
@@ -105,6 +76,44 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
     }
   }
 
+  async function toggleVisibility(
+    playlistId: string,
+    nextVisibility: "hidden" | "public",
+  ) {
+    setPendingId(playlistId);
+    setMessage(null);
+
+    try {
+      const response = await fetch(
+        `/api/admin/playlists/${encodeURIComponent(playlistId)}`,
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ visibility: nextVisibility }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await readError(response));
+      }
+
+      setMessage(
+        nextVisibility === "public"
+          ? "Playlist is now public."
+          : "Playlist is now hidden.",
+      );
+      router.refresh();
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Visibility could not be updated.",
+      );
+    } finally {
+      setPendingId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <form
@@ -112,7 +121,7 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
         onSubmit={(event) => void createPlaylist(event)}
       >
         <p className="kicker">New playlist</p>
-        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
+        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
           <div className="space-y-2">
             <label
               className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
@@ -146,26 +155,6 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
               value={description}
             />
           </div>
-          <div className="space-y-2">
-            <label
-              className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
-              htmlFor="playlist-status"
-            >
-              Status
-            </label>
-            <select
-              className="field"
-              disabled={isCreating}
-              id="playlist-status"
-              onChange={(event) =>
-                setStatus(event.target.value as "draft" | "published")
-              }
-              value={status}
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-            </select>
-          </div>
           <button className="btn-primary" disabled={isCreating} type="submit">
             <Plus aria-hidden="true" size={16} />
             Create
@@ -189,7 +178,7 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
               No playlists yet
             </h3>
             <p className="mt-1 text-sm text-[hsl(var(--muted))]">
-              Create a playlist to start grouping active tunes.
+              Create a playlist to start grouping songs.
             </p>
           </div>
         </div>
@@ -200,8 +189,8 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
               <thead className="text-[11px] uppercase tracking-[0.18em] text-[hsl(var(--muted))]">
                 <tr className="bg-[hsl(var(--surface-2)/0.4)]">
                   <th className="px-5 py-3 font-semibold">Playlist</th>
-                  <th className="px-5 py-3 font-semibold">Status</th>
-                  <th className="px-5 py-3 font-semibold">Items</th>
+                  <th className="px-5 py-3 font-semibold">Visibility</th>
+                  <th className="px-5 py-3 font-semibold">Songs</th>
                   <th className="px-5 py-3 font-semibold">Created</th>
                   <th className="px-5 py-3 font-semibold">Actions</th>
                 </tr>
@@ -221,31 +210,35 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
                         ) : null}
                       </td>
                       <td className="px-5 py-4">
-                        <label className="sr-only" htmlFor={`status-${playlist.id}`}>
-                          Status
-                        </label>
-                        <select
-                          className="field"
-                          disabled={isPending}
-                          id={`status-${playlist.id}`}
-                          onChange={(event) =>
-                            void updateStatus(
-                              playlist.id,
-                              event.target.value as "draft" | "published",
-                            )
-                          }
-                          value={playlist.status}
-                        >
-                          <option value="draft">Draft</option>
-                          <option value="published">Published</option>
-                        </select>
-                        <StatusBadge
-                          className="mt-2"
-                          tone={playlist.status === "published" ? "active" : "muted"}
-                          label={
-                            playlist.status === "published" ? "Published" : "Draft"
-                          }
-                        />
+                        {playlist.visibility === "public" ? (
+                          <button
+                            aria-label={`Hide ${playlist.title} from listeners`}
+                            className="btn-ghost inline-flex items-center gap-2 px-3 py-1 text-xs"
+                            disabled={isPending}
+                            onClick={() =>
+                              void toggleVisibility(playlist.id, "hidden")
+                            }
+                            title="Hide playlist"
+                            type="button"
+                          >
+                            <Eye aria-hidden="true" size={14} />
+                            Public
+                          </button>
+                        ) : (
+                          <button
+                            aria-label={`Publish ${playlist.title}`}
+                            className="btn-ghost inline-flex items-center gap-2 px-3 py-1 text-xs"
+                            disabled={isPending}
+                            onClick={() =>
+                              void toggleVisibility(playlist.id, "public")
+                            }
+                            title="Publish playlist"
+                            type="button"
+                          >
+                            <EyeOff aria-hidden="true" size={14} />
+                            Hidden
+                          </button>
+                        )}
                       </td>
                       <td className="px-5 py-4">
                         <span className="pill">{playlist.itemCount}</span>
@@ -287,12 +280,4 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
   );
 }
 
-async function readError(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: string };
 
-    return body.error ?? "Request failed.";
-  } catch {
-    return "Request failed.";
-  }
-}

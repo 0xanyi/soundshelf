@@ -4,84 +4,77 @@ import {
   buildMovedPlaylistItemPositions,
   getPlaylistItemCreatePrismaErrorResponse,
   isPlaylistItemPositionConflict,
-  isPlaylistPublishRequested,
   parsePlaylistMutationPayload,
   parsePlaylistReorderPayload,
-  validatePlaylistPublishReadiness,
 } from "../../src/lib/playlists/admin";
 
 describe("parsePlaylistMutationPayload", () => {
-  it("trims title and defaults new playlists to draft", () => {
+  it("trims title and description on create", () => {
     expect(
       parsePlaylistMutationPayload(
         {
           title: "  Morning prayers  ",
           description: "  Weekday set  ",
         },
-        { requireTitle: true, defaultStatus: "draft" },
+        { requireTitle: true },
       ),
     ).toEqual({
       valid: true,
       data: {
         title: "Morning prayers",
         description: "Weekday set",
-        status: "draft",
       },
     });
   });
 
-  it("rejects blank titles and unsupported statuses", () => {
+  it("rejects blank titles", () => {
     expect(
       parsePlaylistMutationPayload(
-        { title: " ", status: "published" },
-        { requireTitle: true, defaultStatus: "draft" },
+        { title: " " },
+        { requireTitle: true },
       ),
     ).toEqual({
       valid: false,
       message: "Title is required.",
-    });
-
-    expect(
-      parsePlaylistMutationPayload(
-        { title: "Evening prayers", status: "archived" },
-        { requireTitle: true, defaultStatus: "draft" },
-      ),
-    ).toEqual({
-      valid: false,
-      message: "Status must be draft or published.",
     });
   });
 
   it("allows partial update payloads and normalizes blank descriptions", () => {
     expect(
       parsePlaylistMutationPayload(
-        { description: "   ", status: "published" },
+        { description: "   " },
         { requireTitle: false },
       ),
     ).toEqual({
       valid: true,
       data: {
         description: null,
-        status: "published",
       },
     });
   });
-});
 
-describe("validatePlaylistPublishReadiness", () => {
-  it("requires at least one active tune before publishing", () => {
-    expect(validatePlaylistPublishReadiness(0)).toEqual({
-      valid: false,
-      message: "Playlist must include at least one active tune before publishing.",
+  it("accepts an explicit visibility update", () => {
+    expect(
+      parsePlaylistMutationPayload(
+        { visibility: "public" },
+        { requireTitle: false },
+      ),
+    ).toEqual({
+      valid: true,
+      data: { visibility: "public" },
     });
-
-    expect(validatePlaylistPublishReadiness(1)).toEqual({ valid: true });
   });
 
-  it("detects publish status mutations", () => {
-    expect(isPlaylistPublishRequested({ status: "published" })).toBe(true);
-    expect(isPlaylistPublishRequested({ status: "draft" })).toBe(false);
-    expect(isPlaylistPublishRequested({})).toBe(false);
+  it("rejects unknown visibility values", () => {
+    expect(
+      parsePlaylistMutationPayload(
+        { visibility: "draft" },
+        { requireTitle: false },
+      ),
+    ).toEqual({
+      valid: false,
+      message: 'Visibility must be "hidden" or "public".',
+    });
   });
 });
 

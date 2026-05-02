@@ -1,5 +1,3 @@
-import type { TuneStatus } from "@prisma/client";
-
 import { safeDuration } from "@/lib/format";
 
 export type PublicPlaylistSummaryRecord = {
@@ -10,7 +8,6 @@ export type PublicPlaylistSummaryRecord = {
   items: Array<{
     tune: {
       durationSeconds: number;
-      status: TuneStatus;
     };
   }>;
 };
@@ -27,9 +24,7 @@ export type PublicPlaylistDetailRecord = {
     tune: {
       id: string;
       title: string;
-      description: string | null;
       durationSeconds: number;
-      status: TuneStatus;
       r2ObjectKey: string;
     };
   }>;
@@ -47,7 +42,6 @@ export type SerializedPublicTrack = {
   id: string;
   playlistItemId: string;
   title: string;
-  description: string | null;
   durationSeconds: number;
   audioUrl: string;
 };
@@ -66,14 +60,12 @@ type SignAudioUrl = (key: string) => Promise<string>;
 export function serializePublicPlaylistSummary(
   playlist: PublicPlaylistSummaryRecord,
 ): SerializedPublicPlaylistSummary {
-  const activeItems = playlist.items.filter((item) => item.tune.status === "active");
-
   return {
     id: playlist.id,
     title: playlist.title,
     description: playlist.description,
-    itemCount: activeItems.length,
-    durationSeconds: activeItems.reduce(
+    itemCount: playlist.items.length,
+    durationSeconds: playlist.items.reduce(
       (total, item) => total + safeDuration(item.tune.durationSeconds),
       0,
     ),
@@ -84,17 +76,15 @@ export async function serializePublicPlaylistDetail(
   playlist: PublicPlaylistDetailRecord,
   signAudioUrl: SignAudioUrl,
 ): Promise<SerializedPublicPlaylistDetail | null> {
-  const orderedActiveItems = [...playlist.items]
-    .sort(comparePlaylistItems)
-    .filter((item) => item.tune.status === "active");
+  const orderedItems = [...playlist.items].sort(comparePlaylistItems);
 
   const signedResults = await Promise.allSettled(
-    orderedActiveItems.map((item) => signAudioUrl(item.tune.r2ObjectKey)),
+    orderedItems.map((item) => signAudioUrl(item.tune.r2ObjectKey)),
   );
 
   const tracks: SerializedPublicTrack[] = [];
 
-  orderedActiveItems.forEach((item, index) => {
+  orderedItems.forEach((item, index) => {
     const result = signedResults[index];
 
     if (!result || result.status !== "fulfilled") {
@@ -106,7 +96,6 @@ export async function serializePublicPlaylistDetail(
       id: item.tune.id,
       playlistItemId: item.id,
       title: item.tune.title,
-      description: item.tune.description,
       durationSeconds: item.tune.durationSeconds,
       audioUrl: result.value,
     });

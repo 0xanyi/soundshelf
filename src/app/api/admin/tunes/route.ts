@@ -13,9 +13,24 @@ export async function GET(): Promise<Response> {
 
   const tunes = await db.tune.findMany({
     orderBy: { createdAt: "desc" },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      durationSeconds: true,
+      mimeType: true,
+      fileSizeBytes: true,
+      createdAt: true,
+      updatedAt: true,
       _count: {
         select: { playlistItems: true },
+      },
+      playlistItems: {
+        select: {
+          playlist: {
+            select: { id: true, title: true },
+          },
+        },
+        orderBy: { playlist: { title: "asc" } },
       },
     },
   });

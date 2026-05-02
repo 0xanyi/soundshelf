@@ -273,7 +273,6 @@ export function PlaylistQueuePanel({
                 index={index}
                 track={track}
                 onClick={() => onSelectTrack(index)}
-                showDescription
               />
             ))}
           </ol>
@@ -291,13 +290,11 @@ function TrackRow({
   index,
   track,
   onClick,
-  showDescription = false,
 }: {
   isActive: boolean;
   index: number;
   track: PlayerTrack;
   onClick: () => void;
-  showDescription?: boolean;
 }) {
   return (
     <li>
@@ -339,11 +336,6 @@ function TrackRow({
           >
             {track.title}
           </span>
-          {showDescription && track.description ? (
-            <span className="mt-0.5 block truncate text-xs text-[hsl(var(--muted))]">
-              {track.description}
-            </span>
-          ) : null}
         </span>
         <span className="font-mono text-[11px] tabular-nums text-[hsl(var(--muted))]">
           {formatDuration(track.durationSeconds)}

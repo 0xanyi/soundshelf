@@ -1,5 +1,11 @@
 import { db } from "@/lib/db";
-import { jsonError, requireAdminSession } from "@/lib/http/errors";
+import {
+  enforceSameOrigin,
+  isValidCuid,
+  jsonError,
+  recordAudit,
+  requireAdminSession,
+} from "@/lib/http/errors";
 import {
   buildMovedPlaylistItemPositions,
   buildNormalizedPlaylistItemPositions,
@@ -23,6 +29,9 @@ export async function POST(
   request: Request,
   context: PlaylistItemsRouteContext,
 ): Promise<Response> {
+  const csrf = await enforceSameOrigin(request);
+  if (csrf) return csrf;
+
   const session = await requireAdminSession();
 
   if (!session) {
@@ -46,14 +55,22 @@ export async function POST(
     return jsonError("Tune id is required.", 400);
   }
 
+  if (!isValidCuid(tuneId)) {
+    return jsonError("Invalid tune id.", 400);
+  }
+
   const { playlistId } = await context.params;
+
+  if (!isValidCuid(playlistId)) {
+    return jsonError("Invalid playlist id.", 400);
+  }
   const [playlist, tune] = await Promise.all([
     db.playlist.findUnique({
       where: { id: playlistId },
       select: { id: true },
     }),
-    db.tune.findFirst({
-      where: { id: tuneId, status: "active" },
+    db.tune.findUnique({
+      where: { id: tuneId },
       select: { id: true },
     }),
   ]);
@@ -63,7 +80,7 @@ export async function POST(
   }
 
   if (!tune) {
-    return jsonError("Active tune not found.", 404);
+    return jsonError("Tune not found.", 404);
   }
 
   for (let attempt = 1; attempt <= maxAddItemAttempts; attempt += 1) {
@@ -86,13 +103,19 @@ export async function POST(
               select: {
                 id: true,
                 title: true,
-                description: true,
                 durationSeconds: true,
-                status: true,
               },
             },
           },
         });
+      });
+
+      await recordAudit({
+        actorId: session.userId,
+        action: "playlist.item.create",
+        resource: "playlist",
+        resourceId: playlistId,
+        metadata: { itemId: item.id, tuneId },
       });
 
       return Response.json(serializeAdminPlaylistItem(item), { status: 201 });
@@ -121,6 +144,9 @@ export async function PATCH(
   request: Request,
   context: PlaylistItemsRouteContext,
 ): Promise<Response> {
+  const csrf = await enforceSameOrigin(request);
+  if (csrf) return csrf;
+
   const session = await requireAdminSession();
 
   if (!session) {
@@ -142,6 +168,11 @@ export async function PATCH(
   }
 
   const { playlistId } = await context.params;
+
+  if (!isValidCuid(playlistId)) {
+    return jsonError("Invalid playlist id.", 400);
+  }
+
   const playlist = await db.playlist.findUnique({
     where: { id: playlistId },
     select: {
@@ -169,6 +200,17 @@ export async function PATCH(
 
   await updatePlaylistItemPositions(nextItems);
 
+  await recordAudit({
+    actorId: session.userId,
+    action: "playlist.item.reorder",
+    resource: "playlist",
+    resourceId: playlistId,
+    metadata: {
+      itemId: validation.data.itemId,
+      targetIndex: validation.data.targetIndex,
+    },
+  });
+
   return Response.json({ items: nextItems });
 }
 
@@ -176,6 +218,9 @@ export async function DELETE(
   request: Request,
   context: PlaylistItemsRouteContext,
 ): Promise<Response> {
+  const csrf = await enforceSameOrigin(request);
+  if (csrf) return csrf;
+
   const session = await requireAdminSession();
 
   if (!session) {
@@ -199,7 +244,16 @@ export async function DELETE(
     return jsonError("Item id is required.", 400);
   }
 
+  if (!isValidCuid(itemId)) {
+    return jsonError("Invalid item id.", 400);
+  }
+
   const { playlistId } = await context.params;
+
+  if (!isValidCuid(playlistId)) {
+    return jsonError("Invalid playlist id.", 400);
+  }
+
   const playlist = await db.playlist.findUnique({
     where: { id: playlistId },
     select: {
@@ -228,6 +282,14 @@ export async function DELETE(
   );
 
   await updatePlaylistItemPositions(nextItems);
+
+  await recordAudit({
+    actorId: session.userId,
+    action: "playlist.item.delete",
+    resource: "playlist",
+    resourceId: playlistId,
+    metadata: { itemId },
+  });
 
   return Response.json({ items: nextItems });
 }

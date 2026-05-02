@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ListMusic, Music2 } from "lucide-react";
+import { ListMusic, Music2 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
 type NavItem = {
@@ -15,15 +15,9 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
-    href: "/admin" as Route<string>,
-    label: "Dashboard",
-    description: "Overview",
-    icon: LayoutDashboard,
-  },
-  {
     href: "/admin/tunes" as Route,
-    label: "Tunes",
-    description: "Audio library",
+    label: "Songs",
+    description: "Library",
     icon: Music2,
   },
   {
@@ -41,11 +35,8 @@ export function AdminNav() {
     <nav aria-label="Admin navigation" className="grid gap-1 p-3">
       {navItems.map((item) => {
         const Icon = item.icon;
-        const isExact = pathname === item.href;
         const isActive =
-          item.href === "/admin"
-            ? isExact
-            : pathname === item.href || pathname.startsWith(`${item.href}/`);
+          pathname === item.href || pathname.startsWith(`${item.href}/`);
 
         return (
           <Link

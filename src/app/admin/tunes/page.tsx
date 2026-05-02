@@ -6,26 +6,40 @@ import { serializeAdminTune } from "@/lib/tunes/admin";
 export const dynamic = "force-dynamic";
 
 export default async function AdminTunesPage() {
-  const tunes = await db.tune.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      _count: {
-        select: { playlistItems: true },
+  const [tunes, playlists] = await Promise.all([
+    db.tune.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        _count: {
+          select: { playlistItems: true },
+        },
+        playlistItems: {
+          select: {
+            playlist: {
+              select: { id: true, title: true },
+            },
+          },
+          orderBy: { playlist: { title: "asc" } },
+        },
       },
-    },
-  });
+    }),
+    db.playlist.findMany({
+      orderBy: { title: "asc" },
+      select: { id: true, title: true },
+    }),
+  ]);
   const serializedTunes = tunes.map(serializeAdminTune);
 
   return (
     <section className="space-y-8">
       <header className="space-y-3">
-        <p className="kicker">Tunes</p>
+        <p className="kicker">Songs</p>
         <h2 className="display-heading text-3xl font-semibold sm:text-4xl">
-          Tune management
+          Song library
         </h2>
         <p className="max-w-2xl text-sm leading-6 text-[hsl(var(--muted))]">
-          Upload audio, keep drafts tidy, and publish active tunes for playlist
-          use.
+          Upload audio, rename songs, and add them to playlists. Uploads go live
+          immediately.
         </p>
       </header>
 
@@ -36,12 +50,12 @@ export default async function AdminTunesPage() {
           <div>
             <h3 className="display-heading text-xl font-semibold">Library</h3>
             <p className="mt-1 text-sm text-[hsl(var(--muted))]">
-              {serializedTunes.length} tune
+              {serializedTunes.length} song
               {serializedTunes.length === 1 ? "" : "s"}
             </p>
           </div>
         </div>
-        <TuneManagementTable tunes={serializedTunes} />
+        <TuneManagementTable playlists={playlists} tunes={serializedTunes} />
       </div>
     </section>
   );

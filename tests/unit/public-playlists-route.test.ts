@@ -16,28 +16,17 @@ describe("GET /api/public/playlists", () => {
     vi.resetAllMocks();
   });
 
-  it("omits published playlists with no active tunes", async () => {
+  it("returns every public playlist that has at least one item", async () => {
     const playlists: PublicPlaylistSummaryRecord[] = [
       {
-        id: "playlist-active",
-        title: "Active",
+        id: "playlist-with-items",
+        title: "With items",
         description: null,
         updatedAt: new Date("2026-04-02T19:00:00.000Z"),
-        items: [{ tune: { durationSeconds: 90, status: "active" } }],
-      },
-      {
-        id: "playlist-empty",
-        title: "Empty",
-        description: null,
-        updatedAt: new Date("2026-04-01T19:00:00.000Z"),
-        items: [],
-      },
-      {
-        id: "playlist-draft-only",
-        title: "Draft only",
-        description: null,
-        updatedAt: new Date("2026-04-01T18:00:00.000Z"),
-        items: [{ tune: { durationSeconds: 45, status: "draft" } }],
+        items: [
+          { tune: { durationSeconds: 90 } },
+          { tune: { durationSeconds: 30 } },
+        ],
       },
     ];
 
@@ -46,16 +35,30 @@ describe("GET /api/public/playlists", () => {
     const { GET } = await import("../../src/app/api/public/playlists/route");
     const response = await GET();
 
+    expect(db.playlist.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ visibility: "public" }),
+      }),
+    );
     await expect(response.json()).resolves.toEqual({
       playlists: [
         {
-          id: "playlist-active",
-          title: "Active",
+          id: "playlist-with-items",
+          title: "With items",
           description: null,
-          itemCount: 1,
-          durationSeconds: 90,
+          itemCount: 2,
+          durationSeconds: 120,
         },
       ],
     });
+  });
+
+  it("filters out playlists that have no items", async () => {
+    vi.mocked(db.playlist.findMany).mockResolvedValue([] as never);
+
+    const { GET } = await import("../../src/app/api/public/playlists/route");
+    const response = await GET();
+
+    await expect(response.json()).resolves.toEqual({ playlists: [] });
   });
 });

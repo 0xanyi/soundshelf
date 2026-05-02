@@ -19,7 +19,7 @@ export default async function AdminPlaylistEditorPage({
   params,
 }: AdminPlaylistEditorPageProps) {
   const { playlistId } = await params;
-  const [playlist, activeTunes] = await Promise.all([
+  const [playlist, tunes] = await Promise.all([
     db.playlist.findUnique({
       where: { id: playlistId },
       include: {
@@ -33,9 +33,7 @@ export default async function AdminPlaylistEditorPage({
               select: {
                 id: true,
                 title: true,
-                description: true,
                 durationSeconds: true,
-                status: true,
               },
             },
           },
@@ -43,7 +41,6 @@ export default async function AdminPlaylistEditorPage({
       },
     }),
     db.tune.findMany({
-      where: { status: "active" },
       orderBy: { title: "asc" },
       select: {
         id: true,
@@ -65,14 +62,14 @@ export default async function AdminPlaylistEditorPage({
           {playlist.title}
         </h2>
         <p className="max-w-2xl text-sm leading-6 text-[hsl(var(--muted))]">
-          Edit playlist details, add active tunes, and adjust playback order.
+          Edit playlist details, add songs, and adjust playback order.
         </p>
       </header>
 
       <PlaylistEditor
-        activeTunes={activeTunes}
         items={playlist.items.map(serializeAdminPlaylistItem)}
         playlist={serializeAdminPlaylist(playlist)}
+        tunes={tunes}
       />
     </section>
   );

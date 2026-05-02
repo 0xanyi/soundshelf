@@ -6,26 +6,23 @@ datasource db {
   provider = "postgresql"
 }
 
-enum TuneStatus {
-  draft
-  active
-}
-
-enum PlaylistStatus {
-  draft
-  published
+enum UserRole {
+  user
+  admin
 }
 
 model User {
-  id            String    @id
+  id            String     @id
   name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
+  email         String     @unique
+  emailVerified Boolean    @default(false)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  role          UserRole   @default(user)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
   sessions      Session[]
   accounts      Account[]
+  auditLogs     AuditLog[]
 
   @@index([createdAt])
 }
@@ -80,33 +77,50 @@ model Verification {
 model Tune {
   id              String         @id @default(cuid())
   title           String
-  description     String?
   durationSeconds Int
   mimeType        String
   fileSizeBytes   BigInt
   r2ObjectKey     String         @unique
-  status          TuneStatus     @default(draft)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   playlistItems   PlaylistItem[]
 
-  @@index([status, createdAt])
   @@index([createdAt])
   @@index([title])
 }
 
+enum PlaylistVisibility {
+  hidden
+  public
+}
+
 model Playlist {
-  id          String         @id @default(cuid())
+  id          String             @id @default(cuid())
   title       String
   description String?
-  status      PlaylistStatus @default(draft)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  visibility  PlaylistVisibility @default(hidden)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
   items       PlaylistItem[]
 
-  @@index([status, createdAt])
   @@index([createdAt])
   @@index([title])
+  @@index([visibility, updatedAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  resource   String
+  resourceId String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([resource, resourceId])
 }
 
 model PlaylistItem {

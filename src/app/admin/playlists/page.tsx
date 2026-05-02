@@ -23,8 +23,8 @@ export default async function AdminPlaylistsPage() {
           Playlist management
         </h2>
         <p className="max-w-2xl text-sm leading-6 text-[hsl(var(--muted))]">
-          Create ordered sets of active tunes and publish them when they are
-          ready for listeners.
+          Group songs into playlists. Toggle a playlist to public when it is
+          ready for listeners; hidden playlists stay private.
         </p>
       </header>
 
