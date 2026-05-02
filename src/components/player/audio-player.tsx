@@ -11,7 +11,39 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+
+const QUEUE_PANEL_ID = "player-queue-panel";
+
+function useMediaQuery(query: string): boolean {
+  const subscribe = useCallback(
+    (notify: () => void) => {
+      if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+        return () => {};
+      }
+      const list = window.matchMedia(query);
+      list.addEventListener("change", notify);
+      return () => list.removeEventListener("change", notify);
+    },
+    [query],
+  );
+
+  const getSnapshot = useCallback(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return false;
+    }
+    return window.matchMedia(query).matches;
+  }, [query]);
+
+  return useSyncExternalStore(subscribe, getSnapshot, () => false);
+}
 
 import {
   getNextTrackIndex,
@@ -64,7 +96,6 @@ export function AudioPlayer({
   const [duration, setDuration] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [shouldResumePlayback, setShouldResumePlayback] = useState(false);
-  const [trackedItemId, setTrackedItemId] = useState<string | null>(null);
 
   const safeIndex =
     tracks.length > 0
@@ -80,6 +111,7 @@ export function AudioPlayer({
       : 0;
   const isMuted = volume === 0;
   const hasQueuePanel = Boolean(isQueueOpen && queuePanel);
+  const isXlViewport = useMediaQuery("(min-width: 1280px)");
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -105,12 +137,7 @@ export function AudioPlayer({
     });
   }, [currentTrack, shouldResumePlayback]);
 
-  if (trackedItemId !== (currentTrack?.playlistItemId ?? null)) {
-    setTrackedItemId(currentTrack?.playlistItemId ?? null);
-    setCurrentTime(0);
-    setDuration(0);
-    setLoadError(null);
-  }
+
 
   const goToTrack = useCallback(
     (nextIndex: number, resume = isPlaying) => {
@@ -231,6 +258,11 @@ export function AudioPlayer({
         ref={audioRef}
         preload="metadata"
         src={currentTrack.audioUrl}
+        onLoadStart={() => {
+          setCurrentTime(0);
+          setDuration(0);
+          setLoadError(null);
+        }}
         onCanPlay={() => setLoadError(null)}
         onDurationChange={(event) => {
           const next = event.currentTarget.duration || 0;
@@ -366,6 +398,8 @@ export function AudioPlayer({
               <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                 <TransportButton
                   active={isQueueOpen}
+                  ariaControls={QUEUE_PANEL_ID}
+                  ariaExpanded={Boolean(isQueueOpen)}
                   disabled={!queuePanel}
                   label={isQueueOpen ? "Hide playlist" : "Show playlist"}
                   onClick={() => onToggleQueue?.()}
@@ -417,14 +451,20 @@ export function AudioPlayer({
           </div>
         </div>
 
-        {hasQueuePanel ? (
-          <aside className="relative z-10 hidden min-h-full overflow-hidden border-l border-[hsl(var(--border)/0.55)] bg-[hsl(var(--surface)/0.58)] backdrop-blur-xl xl:block">
+        {hasQueuePanel && isXlViewport ? (
+          <aside
+            id={QUEUE_PANEL_ID}
+            className="relative z-10 min-h-full overflow-hidden border-l border-[hsl(var(--border)/0.55)] bg-[hsl(var(--surface)/0.58)] backdrop-blur-xl"
+          >
             {queuePanel}
           </aside>
         ) : null}
       </div>
-      {hasQueuePanel ? (
-        <div className="relative z-10 max-h-[min(24rem,calc(100vh-8rem))] overflow-hidden border-t border-[hsl(var(--border)/0.55)] bg-[hsl(var(--surface)/0.72)] backdrop-blur-xl xl:hidden">
+      {hasQueuePanel && !isXlViewport ? (
+        <div
+          id={QUEUE_PANEL_ID}
+          className="relative z-10 max-h-[min(24rem,calc(100vh-8rem))] overflow-hidden border-t border-[hsl(var(--border)/0.55)] bg-[hsl(var(--surface)/0.72)] backdrop-blur-xl"
+        >
           {queuePanel}
         </div>
       ) : null}
@@ -591,12 +631,16 @@ function PlayButton({
 
 function TransportButton({
   active = false,
+  ariaControls,
+  ariaExpanded,
   children,
   disabled = false,
   label,
   onClick,
 }: {
   active?: boolean;
+  ariaControls?: string;
+  ariaExpanded?: boolean;
   children: React.ReactNode;
   disabled?: boolean;
   label: string;
@@ -604,6 +648,8 @@ function TransportButton({
 }) {
   return (
     <button
+      aria-controls={ariaControls}
+      aria-expanded={ariaExpanded}
       aria-label={label}
       aria-pressed={active || undefined}
       className="grid size-10 place-items-center rounded-full text-[hsl(var(--muted))] transition hover:bg-[hsl(var(--surface-2)/0.7)] hover:text-foreground focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mood)/0.45)] disabled:cursor-not-allowed disabled:opacity-30 data-[active=true]:bg-[hsl(var(--mood)/0.16)] data-[active=true]:text-[hsl(var(--mood))]"

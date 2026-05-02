@@ -1,3 +1,22 @@
+/**
+ * Clamp a possibly-invalid duration value to a non-negative finite number.
+ * Centralizes defensive handling so all consumers behave consistently when
+ * upstream data (e.g. database rows, stale cache) produces NaN or negatives.
+ */
+export function safeDuration(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) {
+    if (process.env.NODE_ENV !== "production" && Number.isFinite(value) && value < 0) {
+      console.warn(`safeDuration: clamped negative duration ${value} to 0`);
+    }
+    return 0;
+  }
+  return value;
+}
+
+function formatDurationUnit(value: number, unit: "hour" | "minute"): string {
+  return `${value} ${unit}${value === 1 ? "" : "s"}`;
+}
+
 export function formatDuration(
   seconds: number,
   options: { fallback?: string } = {},
@@ -34,10 +53,6 @@ export function formatTotalDuration(seconds: number): string {
         minutes,
         "minute",
       )}`;
-}
-
-function formatDurationUnit(value: number, unit: "hour" | "minute"): string {
-  return `${value} ${unit}${value === 1 ? "" : "s"}`;
 }
 
 export function formatBytes(value: number | string): string {

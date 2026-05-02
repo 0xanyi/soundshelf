@@ -1,5 +1,7 @@
 import type { TuneStatus } from "@prisma/client";
 
+import { safeDuration } from "@/lib/format";
+
 export type PublicPlaylistSummaryRecord = {
   id: string;
   title: string;
@@ -72,7 +74,7 @@ export function serializePublicPlaylistSummary(
     description: playlist.description,
     itemCount: activeItems.length,
     durationSeconds: activeItems.reduce(
-      (total, item) => total + Math.max(item.tune.durationSeconds, 0),
+      (total, item) => total + safeDuration(item.tune.durationSeconds),
       0,
     ),
   };
@@ -120,7 +122,7 @@ export async function serializePublicPlaylistDetail(
     description: playlist.description,
     itemCount: tracks.length,
     durationSeconds: tracks.reduce(
-      (total, track) => total + Math.max(track.durationSeconds, 0),
+      (total, track) => total + safeDuration(track.durationSeconds),
       0,
     ),
     tracks,

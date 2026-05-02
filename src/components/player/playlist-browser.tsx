@@ -14,6 +14,7 @@ import type {
   PublicPlaylistDetail,
   PublicPlaylistSummary,
 } from "@/components/player/browser/types";
+import { safeDuration } from "@/lib/format";
 import { getMood } from "@/lib/mood";
 
 export function PlaylistBrowser() {
@@ -26,6 +27,7 @@ export function PlaylistBrowser() {
   const [listError, setListError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [detailReloadKey, setDetailReloadKey] = useState(0);
+  const [listReloadKey, setListReloadKey] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTracksOpen, setIsTracksOpen] = useState(false);
 
@@ -68,7 +70,7 @@ export function PlaylistBrowser() {
     void loadPlaylists();
 
     return () => controller.abort();
-  }, []);
+  }, [listReloadKey]);
 
   useEffect(() => {
     if (!selectedPlaylistId) {
@@ -133,7 +135,7 @@ export function PlaylistBrowser() {
     }
 
     return selectedPlaylist.tracks.reduce(
-      (total, track) => total + Math.max(track.durationSeconds, 0),
+      (total, track) => total + safeDuration(track.durationSeconds),
       0,
     );
   }, [selectedPlaylist]);
@@ -233,14 +235,14 @@ export function PlaylistBrowser() {
               playlists={playlists}
               selectedPlaylistId={selectedPlaylistId}
               state={listState}
-              onRetry={() => window.location.reload()}
+              onRetry={() => setListReloadKey((key) => key + 1)}
               onSelect={handleSelectPlaylist}
             />
           </section>
         </div>
 
         <footer className="mt-auto border-t border-[hsl(var(--border)/0.45)] pt-6 text-center font-mono text-[10px] uppercase tracking-[0.24em] text-[hsl(var(--muted))]">
-          Copyright 2026 SoundShelf. All rights reserved.
+          Copyright {new Date().getFullYear()} SoundShelf. All rights reserved.
         </footer>
       </div>
     </main>
