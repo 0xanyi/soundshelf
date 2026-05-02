@@ -1,5 +1,13 @@
 # Prayer Tunes Implementation Plan
 
+> **Status (2026-05-02):** This plan is **superseded**. The dashboard refactor on
+> branch `refactor/admin-dashboard-simplify` removed the `Tune.status` /
+> `Playlist.status` enums (songs go live on upload, playlists are gated by a
+> `Playlist.visibility` flag with default `hidden`) and dropped
+> `Tune.description`. Treat this document as historical context only; the
+> source of truth is `prisma/schema.prisma` and the routes under
+> `src/app/api/admin`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a Docker-deployable Next.js app where public users play published prayer-tune playlists and admins upload/manage tunes and playlists.

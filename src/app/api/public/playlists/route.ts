@@ -6,11 +6,12 @@ export const runtime = "nodejs";
 export async function GET(): Promise<Response> {
   const playlists = await db.playlist.findMany({
     where: {
-      status: "published",
+      // Only playlists explicitly marked public are exposed. Filtering on the
+      // visibility flag (rather than "has any items") keeps draft work-in-
+      // progress lists private even after the first track lands in them.
+      visibility: "public",
       items: {
-        some: {
-          tune: { status: "active" },
-        },
+        some: {},
       },
     },
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
@@ -24,13 +25,13 @@ export async function GET(): Promise<Response> {
           tune: {
             select: {
               durationSeconds: true,
-              status: true,
             },
           },
         },
       },
     },
   });
+
   const serializedPlaylists = playlists
     .map(serializePublicPlaylistSummary)
     .filter((playlist) => playlist.itemCount > 0);

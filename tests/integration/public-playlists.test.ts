@@ -7,6 +7,7 @@ vi.mock("../../src/lib/db", () => ({
   db: {
     playlist: {
       findFirst: vi.fn(),
+      findUnique: vi.fn(),
       findMany: vi.fn(),
     },
   },
@@ -20,10 +21,9 @@ type PlaylistSummarySeed = {
   id: string;
   title: string;
   description: string | null;
-  status: "draft" | "published";
   createdAt: Date;
   updatedAt: Date;
-  items: Array<{ tune: { durationSeconds: number; status: "draft" | "active" } }>;
+  items: Array<{ tune: { durationSeconds: number } }>;
 };
 
 type PlaylistDetailSeed = PlaylistSummarySeed & {
@@ -34,9 +34,7 @@ type PlaylistDetailSeed = PlaylistSummarySeed & {
     tune: {
       id: string;
       title: string;
-      description: string | null;
       durationSeconds: number;
-      status: "draft" | "active";
       r2ObjectKey: string;
     };
   }>;
@@ -48,163 +46,104 @@ describe("public playlist integration", () => {
     vi.resetModules();
   });
 
-  it("returns published playlists with active tunes and excludes draft playlists", async () => {
+  it("returns every playlist that has at least one tune", async () => {
     const playlists: PlaylistSummarySeed[] = [
       {
-        id: "playlist-published",
-        title: "Published morning",
+        id: "playlist-with-items",
+        title: "Morning",
         description: "Playable",
-        status: "published",
         createdAt: new Date("2026-04-01T08:00:00.000Z"),
         updatedAt: new Date("2026-04-03T08:00:00.000Z"),
         items: [
-          { tune: { durationSeconds: 123, status: "active" } },
-          { tune: { durationSeconds: 99, status: "draft" } },
+          { tune: { durationSeconds: 123 } },
+          { tune: { durationSeconds: 99 } },
         ],
-      },
-      {
-        id: "playlist-draft",
-        title: "Draft evening",
-        description: "Not public",
-        status: "draft",
-        createdAt: new Date("2026-04-02T08:00:00.000Z"),
-        updatedAt: new Date("2026-04-04T08:00:00.000Z"),
-        items: [{ tune: { durationSeconds: 88, status: "active" } }],
-      },
-      {
-        id: "playlist-inactive-only",
-        title: "Inactive only",
-        description: null,
-        status: "published",
-        createdAt: new Date("2026-04-03T08:00:00.000Z"),
-        updatedAt: new Date("2026-04-05T08:00:00.000Z"),
-        items: [{ tune: { durationSeconds: 77, status: "draft" } }],
       },
     ];
 
-    vi.mocked(db.playlist.findMany).mockResolvedValue(
-      playlists.filter(
-        (playlist) =>
-          playlist.status === "published" &&
-          playlist.items.some((item) => item.tune.status === "active"),
-      ) as never,
-    );
+    vi.mocked(db.playlist.findMany).mockResolvedValue(playlists as never);
 
     const { GET } = await import("../../src/app/api/public/playlists/route");
     const response = await GET();
 
     expect(db.playlist.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: {
-          status: "published",
+        where: expect.objectContaining({
+          visibility: "public",
           items: {
-            some: {
-              tune: { status: "active" },
-            },
+            some: {},
           },
-        },
+        }),
       }),
     );
     await expect(response.json()).resolves.toEqual({
       playlists: [
         {
-          id: "playlist-published",
-          title: "Published morning",
+          id: "playlist-with-items",
+          title: "Morning",
           description: "Playable",
-          itemCount: 1,
-          durationSeconds: 123,
+          itemCount: 2,
+          durationSeconds: 222,
         },
       ],
     });
   });
 
-  it("returns only active tunes from a published playlist detail", async () => {
+  it("returns the playlist detail with signed audio urls", async () => {
     const playlist: PlaylistDetailSeed = {
-      id: "playlist-published",
-      title: "Published morning",
+      id: "playlist-1",
+      title: "Morning",
       description: "Playable",
-      status: "published",
       createdAt: new Date("2026-04-01T08:00:00.000Z"),
       updatedAt: new Date("2026-04-03T08:00:00.000Z"),
       items: [
         {
-          id: "item-active",
+          id: "item-1",
           position: 0,
           createdAt: new Date("2026-04-03T08:01:00.000Z"),
           tune: {
-            id: "tune-active",
-            title: "Active tune",
-            description: "Public track",
+            id: "tune-1",
+            title: "First",
             durationSeconds: 123,
-            status: "active",
-            r2ObjectKey: "audio/active.mp3",
-          },
-        },
-        {
-          id: "item-draft",
-          position: 1,
-          createdAt: new Date("2026-04-03T08:02:00.000Z"),
-          tune: {
-            id: "tune-draft",
-            title: "Draft tune",
-            description: "Hidden track",
-            durationSeconds: 99,
-            status: "draft",
-            r2ObjectKey: "audio/draft.mp3",
+            r2ObjectKey: "audio/first.mp3",
           },
         },
       ],
     };
 
-    vi.mocked(db.playlist.findFirst).mockResolvedValue(
-      {
-        ...playlist,
-        items: playlist.items.filter((item) => item.tune.status === "active"),
-      } as never,
-    );
+    vi.mocked(db.playlist.findFirst).mockResolvedValue(playlist as never);
     vi.mocked(getSignedAudioUrl).mockResolvedValue(
-      "https://cdn.example.test/audio/active.mp3",
+      "https://cdn.example.test/audio/first.mp3",
     );
 
     const { GET } = await import(
       "../../src/app/api/public/playlists/[playlistId]/route"
     );
     const response = await GET(new Request("http://localhost/api"), {
-      params: Promise.resolve({ playlistId: "playlist-published" }),
+      params: Promise.resolve({ playlistId: "playlist-1" }),
     });
 
     expect(db.playlist.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: {
-          id: "playlist-published",
-          status: "published",
-        },
-        select: expect.objectContaining({
-          items: expect.objectContaining({
-            where: {
-              tune: { status: "active" },
-            },
-          }),
-        }),
+        where: { id: "playlist-1", visibility: "public" },
       }),
     );
     await expect(response.json()).resolves.toEqual({
-      id: "playlist-published",
-      title: "Published morning",
+      id: "playlist-1",
+      title: "Morning",
       description: "Playable",
       itemCount: 1,
       durationSeconds: 123,
       tracks: [
         {
-          id: "tune-active",
-          playlistItemId: "item-active",
-          title: "Active tune",
-          description: "Public track",
+          id: "tune-1",
+          playlistItemId: "item-1",
+          title: "First",
           durationSeconds: 123,
-          audioUrl: "https://cdn.example.test/audio/active.mp3",
+          audioUrl: "https://cdn.example.test/audio/first.mp3",
         },
       ],
     });
-    expect(getSignedAudioUrl).toHaveBeenCalledExactlyOnceWith("audio/active.mp3");
+    expect(getSignedAudioUrl).toHaveBeenCalledExactlyOnceWith("audio/first.mp3");
   });
 });

@@ -11,15 +11,16 @@ import type {
   SerializedAdminPlaylistItem,
 } from "@/lib/playlists/admin";
 import { formatDuration } from "@/lib/format";
+import { readError } from "@/lib/http/client";
 
-type ActiveTuneOption = {
+type TuneOption = {
   id: string;
   title: string;
   durationSeconds: number;
 };
 
 type PlaylistEditorProps = {
-  activeTunes: ActiveTuneOption[];
+  tunes: TuneOption[];
   items: SerializedAdminPlaylistItem[];
   playlist: SerializedAdminPlaylist;
 };
@@ -27,7 +28,6 @@ type PlaylistEditorProps = {
 type PlaylistDraft = {
   title: string;
   description: string;
-  status: "draft" | "published";
 };
 
 type PlaylistItemsMutationResponse = {
@@ -40,7 +40,7 @@ type PlaylistItemsState = {
 };
 
 export function PlaylistEditor({
-  activeTunes,
+  tunes,
   items,
   playlist,
 }: PlaylistEditorProps) {
@@ -48,7 +48,6 @@ export function PlaylistEditor({
   const [draft, setDraft] = useState<PlaylistDraft>(() => ({
     title: playlist.title,
     description: playlist.description ?? "",
-    status: playlist.status,
   }));
   const [itemsState, setItemsState] = useState<PlaylistItemsState>(() => ({
     sourceItems: items,
@@ -67,8 +66,8 @@ export function PlaylistEditor({
   const availableTunes = useMemo(() => {
     const usedTuneIds = new Set(currentItems.map((item) => item.tune.id));
 
-    return activeTunes.filter((tune) => !usedTuneIds.has(tune.id));
-  }, [activeTunes, currentItems]);
+    return tunes.filter((tune) => !usedTuneIds.has(tune.id));
+  }, [tunes, currentItems]);
 
   async function savePlaylist(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -104,7 +103,7 @@ export function PlaylistEditor({
     event.preventDefault();
 
     if (!selectedTuneId) {
-      setMessage("Select a tune to add.");
+      setMessage("Select a song to add.");
       return;
     }
 
@@ -128,10 +127,10 @@ export function PlaylistEditor({
       const item = (await response.json()) as SerializedAdminPlaylistItem;
       updateCurrentItems((current) => [...current, item]);
       setSelectedTuneId("");
-      setMessage("Tune added.");
+      setMessage("Song added.");
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Tune could not be added.");
+      setMessage(error instanceof Error ? error.message : "Song could not be added.");
     } finally {
       setPendingAction(null);
     }
@@ -230,7 +229,7 @@ export function PlaylistEditor({
         onSubmit={(event) => void savePlaylist(event)}
       >
         <p className="kicker">Details</p>
-        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
+        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
           <div className="space-y-2">
             <label
               className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
@@ -269,29 +268,6 @@ export function PlaylistEditor({
               value={draft.description}
             />
           </div>
-          <div className="space-y-2">
-            <label
-              className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
-              htmlFor="playlist-status"
-            >
-              Status
-            </label>
-            <select
-              className="field"
-              disabled={pendingAction === "playlist"}
-              id="playlist-status"
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  status: event.target.value as PlaylistDraft["status"],
-                }))
-              }
-              value={draft.status}
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-            </select>
-          </div>
           <button
             className="btn-primary"
             disabled={pendingAction === "playlist"}
@@ -313,14 +289,14 @@ export function PlaylistEditor({
         className="panel-quiet p-5 sm:p-6"
         onSubmit={(event) => void addTune(event)}
       >
-        <p className="kicker">Add a tune</p>
+        <p className="kicker">Add a song</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
           <div className="space-y-2">
             <label
               className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
               htmlFor="add-tune"
             >
-              Active tune
+              Song
             </label>
             <select
               className="field"
@@ -331,8 +307,8 @@ export function PlaylistEditor({
             >
               <option value="">
                 {availableTunes.length === 0
-                  ? "No active tunes available"
-                  : "Select a tune"}
+                  ? "No songs available"
+                  : "Select a song"}
               </option>
               {availableTunes.map((tune) => (
                 <option key={tune.id} value={tune.id}>
@@ -357,7 +333,7 @@ export function PlaylistEditor({
           <div>
             <h3 className="display-heading text-xl font-semibold">Items</h3>
             <p className="mt-1 text-sm text-[hsl(var(--muted))]">
-              {currentItems.length} tune{currentItems.length === 1 ? "" : "s"}
+              {currentItems.length} song{currentItems.length === 1 ? "" : "s"}
             </p>
           </div>
         </div>
@@ -369,10 +345,10 @@ export function PlaylistEditor({
             </span>
             <div>
               <h3 className="display-heading text-lg font-semibold">
-                No tunes in this playlist
+                No songs in this playlist
               </h3>
               <p className="mt-1 text-sm text-[hsl(var(--muted))]">
-                Add active tunes from the selector above.
+                Add songs from the selector above.
               </p>
             </div>
           </div>
@@ -383,7 +359,7 @@ export function PlaylistEditor({
                 <thead className="text-[11px] uppercase tracking-[0.18em] text-[hsl(var(--muted))]">
                   <tr className="bg-[hsl(var(--surface-2)/0.4)]">
                     <th className="px-5 py-3 font-semibold">#</th>
-                    <th className="px-5 py-3 font-semibold">Tune</th>
+                    <th className="px-5 py-3 font-semibold">Song</th>
                     <th className="px-5 py-3 font-semibold">Duration</th>
                     <th className="px-5 py-3 font-semibold">Actions</th>
                   </tr>
@@ -399,11 +375,6 @@ export function PlaylistEditor({
                         </td>
                         <td className="min-w-72 px-5 py-4">
                           <div className="font-medium">{item.tune.title}</div>
-                          {item.tune.description ? (
-                            <div className="mt-1 max-w-md text-sm text-[hsl(var(--muted))]">
-                              {item.tune.description}
-                            </div>
-                          ) : null}
                         </td>
                         <td className="px-5 py-4 font-mono text-xs text-[hsl(var(--muted))]">
                           {formatDuration(item.tune.durationSeconds, { fallback: "—:—" })}
@@ -437,7 +408,7 @@ export function PlaylistEditor({
                               className="btn-danger-icon"
                               disabled={isPending}
                               onClick={() => void removeItem(item.id)}
-                              title="Remove tune"
+                              title="Remove song"
                               type="button"
                             >
                               <Trash2 aria-hidden="true" size={16} />
@@ -494,12 +465,4 @@ function applyServerItemPositions(
     .sort((left, right) => left.position - right.position);
 }
 
-async function readError(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: string };
 
-    return body.error ?? "Request failed.";
-  } catch {
-    return "Request failed.";
-  }
-}

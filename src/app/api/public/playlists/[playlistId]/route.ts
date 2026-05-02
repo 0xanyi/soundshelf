@@ -17,19 +17,15 @@ export async function GET(
 ): Promise<Response> {
   const { playlistId } = await context.params;
   const playlist = await db.playlist.findFirst({
-    where: {
-      id: playlistId,
-      status: "published",
-    },
+    // Combining the id with the visibility filter prevents enumeration of
+    // hidden playlists by id; an unknown id and a hidden id both 404.
+    where: { id: playlistId, visibility: "public" },
     select: {
       id: true,
       title: true,
       description: true,
       updatedAt: true,
       items: {
-        where: {
-          tune: { status: "active" },
-        },
         orderBy: [{ position: "asc" }, { createdAt: "asc" }],
         select: {
           id: true,
@@ -39,9 +35,7 @@ export async function GET(
             select: {
               id: true,
               title: true,
-              description: true,
               durationSeconds: true,
-              status: true,
               r2ObjectKey: true,
             },
           },

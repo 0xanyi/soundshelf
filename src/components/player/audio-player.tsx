@@ -56,7 +56,6 @@ export type PlayerTrack = {
   id: string;
   playlistItemId: string;
   title: string;
-  description: string | null;
   durationSeconds: number;
   audioUrl: string;
 };
@@ -326,12 +325,6 @@ export function AudioPlayer({
               >
                 <span className="rise-in inline-block">{currentTrack.title}</span>
               </h2>
-
-              {currentTrack.description ? (
-                <p className="line-clamp-2 max-w-xl text-[13.5px] leading-6 text-[hsl(var(--muted))]">
-                  {currentTrack.description}
-                </p>
-              ) : null}
             </div>
 
             {/* Scrubber */}

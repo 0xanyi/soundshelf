@@ -1,10 +1,14 @@
 import { db } from "@/lib/db";
-import { jsonError, requireAdminSession } from "@/lib/http/errors";
 import {
-  isPlaylistPublishRequested,
+  enforceSameOrigin,
+  isValidCuid,
+  jsonError,
+  recordAudit,
+  requireAdminSession,
+} from "@/lib/http/errors";
+import {
   parsePlaylistMutationPayload,
   serializeAdminPlaylist,
-  validatePlaylistPublishReadiness,
 } from "@/lib/playlists/admin";
 
 export const runtime = "nodejs";
@@ -19,6 +23,9 @@ export async function PATCH(
   request: Request,
   context: PlaylistRouteContext,
 ): Promise<Response> {
+  const csrf = await enforceSameOrigin(request);
+  if (csrf) return csrf;
+
   const session = await requireAdminSession();
 
   if (!session) {
@@ -42,27 +49,18 @@ export async function PATCH(
   }
 
   const { playlistId } = await context.params;
+
+  if (!isValidCuid(playlistId)) {
+    return jsonError("Invalid playlist id.", 400);
+  }
+
   const existingPlaylist = await db.playlist.findUnique({
     where: { id: playlistId },
-    select: { id: true },
+    select: { id: true, visibility: true },
   });
 
   if (!existingPlaylist) {
     return jsonError("Playlist not found.", 404);
-  }
-
-  if (isPlaylistPublishRequested(validation.data)) {
-    const activeTuneCount = await db.playlistItem.count({
-      where: {
-        playlistId,
-        tune: { status: "active" },
-      },
-    });
-    const readiness = validatePlaylistPublishReadiness(activeTuneCount);
-
-    if (!readiness.valid) {
-      return jsonError(readiness.message, 409);
-    }
   }
 
   const playlist = await db.playlist.update({
@@ -75,13 +73,45 @@ export async function PATCH(
     },
   });
 
+  // Visibility flips are the highest-impact change here, so they get a
+  // dedicated audit action that is easy to filter.
+  if (
+    typeof validation.data.visibility !== "undefined" &&
+    validation.data.visibility !== existingPlaylist.visibility
+  ) {
+    await recordAudit({
+      actorId: session.userId,
+      action: "playlist.visibility.update",
+      resource: "playlist",
+      resourceId: playlistId,
+      metadata: {
+        from: existingPlaylist.visibility,
+        to: validation.data.visibility,
+      },
+    });
+  }
+
+  await recordAudit({
+    actorId: session.userId,
+    action: "playlist.update",
+    resource: "playlist",
+    resourceId: playlistId,
+    metadata: {
+      title: validation.data.title,
+      hasDescriptionChange: "description" in validation.data,
+    },
+  });
+
   return Response.json(serializeAdminPlaylist(playlist));
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: PlaylistRouteContext,
 ): Promise<Response> {
+  const csrf = await enforceSameOrigin(request);
+  if (csrf) return csrf;
+
   const session = await requireAdminSession();
 
   if (!session) {
@@ -89,9 +119,14 @@ export async function DELETE(
   }
 
   const { playlistId } = await context.params;
+
+  if (!isValidCuid(playlistId)) {
+    return jsonError("Invalid playlist id.", 400);
+  }
+
   const existingPlaylist = await db.playlist.findUnique({
     where: { id: playlistId },
-    select: { id: true },
+    select: { id: true, title: true },
   });
 
   if (!existingPlaylist) {
@@ -100,6 +135,14 @@ export async function DELETE(
 
   await db.playlist.delete({
     where: { id: playlistId },
+  });
+
+  await recordAudit({
+    actorId: session.userId,
+    action: "playlist.delete",
+    resource: "playlist",
+    resourceId: playlistId,
+    metadata: { title: existingPlaylist.title },
   });
 
   return new Response(null, { status: 204 });

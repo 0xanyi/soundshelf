@@ -1,27 +1,36 @@
 "use client";
 
-import { Music2, Save, Trash2 } from "lucide-react";
+import { Music2, Save, Trash2, X } from "lucide-react";
+import Link from "next/link";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import type { SerializedAdminTune } from "@/lib/tunes/admin";
-import { StatusBadge } from "@/components/ui/status-badge";
+import type { SerializedAdminPlaylist } from "@/lib/playlists/admin";
+import { AddToPlaylistPopover } from "@/components/admin/add-to-playlist-popover";
 import { formatBytes, formatDate, formatDuration } from "@/lib/format";
+import { readError } from "@/lib/http/client";
 
 type TuneManagementTableProps = {
   tunes: SerializedAdminTune[];
+  playlists: Pick<SerializedAdminPlaylist, "id" | "title">[];
 };
 
-type TuneDraft = {
-  title: string;
-  description: string;
-  status: "draft" | "active";
-};
-
-export function TuneManagementTable({ tunes }: TuneManagementTableProps) {
+export function TuneManagementTable({
+  tunes,
+  playlists,
+}: TuneManagementTableProps) {
   const router = useRouter();
   const [pendingTuneId, setPendingTuneId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkPending, setIsBulkPending] = useState(false);
+
+  const selectableIds = useMemo(() => tunes.map((tune) => tune.id), [tunes]);
+  const allSelected =
+    selectableIds.length > 0 && selectedIds.size === selectableIds.length;
+  const someSelected = selectedIds.size > 0;
 
   if (tunes.length === 0) {
     return (
@@ -31,17 +40,37 @@ export function TuneManagementTable({ tunes }: TuneManagementTableProps) {
         </span>
         <div>
           <h3 className="display-heading text-lg font-semibold">
-            No tunes uploaded yet
+            No songs uploaded yet
           </h3>
           <p className="mt-1 text-sm text-[hsl(var(--muted))]">
-            Uploaded files will appear here as draft tunes.
+            Uploaded files appear here and go live immediately.
           </p>
         </div>
       </div>
     );
   }
 
-  async function saveTune(tuneId: string, draft: TuneDraft) {
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(selectableIds));
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  async function saveTitle(tuneId: string, title: string) {
     setPendingTuneId(tuneId);
     setMessage(null);
 
@@ -49,17 +78,17 @@ export function TuneManagementTable({ tunes }: TuneManagementTableProps) {
       const response = await fetch(`/api/admin/tunes/${encodeURIComponent(tuneId)}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(draft),
+        body: JSON.stringify({ title }),
       });
 
       if (!response.ok) {
         throw new Error(await readError(response));
       }
 
-      setMessage("Tune saved.");
+      setMessage("Song saved.");
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Tune could not be saved.");
+      setMessage(error instanceof Error ? error.message : "Song could not be saved.");
     } finally {
       setPendingTuneId(null);
     }
@@ -67,7 +96,7 @@ export function TuneManagementTable({ tunes }: TuneManagementTableProps) {
 
   async function deleteTune(tune: SerializedAdminTune) {
     if (!tune.canDelete) {
-      setMessage("Tune is used in a playlist and cannot be deleted.");
+      setMessage("Song is in a playlist. Remove it first to delete.");
       return;
     }
 
@@ -84,16 +113,86 @@ export function TuneManagementTable({ tunes }: TuneManagementTableProps) {
       }
 
       if (response.status === 204) {
-        setMessage("Tune deleted.");
+        setMessage("Song deleted.");
       } else {
         const warning = await readWarning(response);
-        setMessage(warning ?? "Tune deleted, but storage cleanup needs attention.");
+        setMessage(warning ?? "Song deleted, but storage cleanup needs attention.");
       }
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Tune could not be deleted.");
+      setMessage(error instanceof Error ? error.message : "Song could not be deleted.");
     } finally {
       setPendingTuneId(null);
+    }
+  }
+
+  async function syncPlaylists(
+    tuneId: string,
+    playlistIds: string[],
+  ): Promise<boolean> {
+    setMessage(null);
+
+    try {
+      const response = await fetch(
+        `/api/admin/tunes/${encodeURIComponent(tuneId)}/playlists`,
+        {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ playlistIds }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await readError(response));
+      }
+
+      setMessage("Playlists updated.");
+      router.refresh();
+      return true;
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Playlists could not be updated.",
+      );
+      return false;
+    }
+  }
+
+  async function bulkAddToPlaylists(playlistIds: string[]): Promise<boolean> {
+    if (playlistIds.length === 0) {
+      setMessage("Select at least one playlist.");
+      return false;
+    }
+
+    setIsBulkPending(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/admin/tunes/bulk-playlists", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tuneIds: [...selectedIds],
+          playlistIds,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(await readError(response));
+      }
+
+      setMessage(
+        `Added ${selectedIds.size} song${selectedIds.size === 1 ? "" : "s"} to ${playlistIds.length} playlist${playlistIds.length === 1 ? "" : "s"}.`,
+      );
+      setSelectedIds(new Set());
+      router.refresh();
+      return true;
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Bulk add failed.",
+      );
+      return false;
+    } finally {
+      setIsBulkPending(false);
     }
   }
 
@@ -104,15 +203,53 @@ export function TuneManagementTable({ tunes }: TuneManagementTableProps) {
           {message}
         </p>
       ) : null}
+
+      {someSelected ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[hsl(var(--mood)/0.4)] bg-[hsl(var(--mood)/0.08)] px-4 py-2.5">
+          <div className="flex items-center gap-3">
+            <button
+              aria-label="Clear selection"
+              className="btn-ghost-icon"
+              onClick={() => setSelectedIds(new Set())}
+              type="button"
+            >
+              <X aria-hidden="true" size={14} />
+            </button>
+            <p className="text-sm font-medium">
+              {selectedIds.size} song{selectedIds.size === 1 ? "" : "s"} selected
+            </p>
+          </div>
+          <AddToPlaylistPopover
+            disabled={isBulkPending}
+            initialSelectedIds={[]}
+            onApply={bulkAddToPlaylists}
+            playlists={playlists}
+            triggerIcon="list"
+            triggerLabel="Add to playlists…"
+            triggerVariant="primary"
+          />
+        </div>
+      ) : null}
+
       <div className="panel-quiet overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-[hsl(var(--border)/0.5)] text-left text-sm">
             <thead className="text-[11px] uppercase tracking-[0.18em] text-[hsl(var(--muted))]">
               <tr className="bg-[hsl(var(--surface-2)/0.4)]">
-                <th className="px-5 py-3 font-semibold">Tune</th>
-                <th className="px-5 py-3 font-semibold">Status</th>
+                <th className="w-10 px-5 py-3">
+                  <label className="sr-only" htmlFor="select-all">
+                    Select all
+                  </label>
+                  <input
+                    checked={allSelected}
+                    id="select-all"
+                    onChange={toggleSelectAll}
+                    type="checkbox"
+                  />
+                </th>
+                <th className="px-5 py-3 font-semibold">Song</th>
+                <th className="px-5 py-3 font-semibold">Playlists</th>
                 <th className="px-5 py-3 font-semibold">File</th>
-                <th className="px-5 py-3 font-semibold">Usage</th>
                 <th className="px-5 py-3 font-semibold">Created</th>
                 <th className="px-5 py-3 font-semibold">Actions</th>
               </tr>
@@ -120,13 +257,18 @@ export function TuneManagementTable({ tunes }: TuneManagementTableProps) {
             <tbody className="divide-y divide-[hsl(var(--border)/0.4)]">
               {tunes.map((tune) => {
                 const isPending = pendingTuneId === tune.id;
+                const isSelected = selectedIds.has(tune.id);
 
                 return (
                   <TuneTableRow
                     isPending={isPending}
-                    key={`${tune.id}:${tune.updatedAt}`}
+                    isSelected={isSelected}
+                    key={tune.id}
+                    onApplyPlaylists={(ids) => syncPlaylists(tune.id, ids)}
                     onDelete={deleteTune}
-                    onSave={saveTune}
+                    onSave={saveTitle}
+                    onToggleSelect={() => toggleSelect(tune.id)}
+                    playlists={playlists}
                     tune={tune}
                   />
                 );
@@ -141,19 +283,52 @@ export function TuneManagementTable({ tunes }: TuneManagementTableProps) {
 
 function TuneTableRow({
   isPending,
+  isSelected,
+  onApplyPlaylists,
   onDelete,
   onSave,
+  onToggleSelect,
+  playlists,
   tune,
 }: {
   isPending: boolean;
+  isSelected: boolean;
+  onApplyPlaylists: (ids: string[]) => Promise<boolean>;
   onDelete: (tune: SerializedAdminTune) => Promise<void>;
-  onSave: (tuneId: string, draft: TuneDraft) => Promise<void>;
+  onSave: (tuneId: string, title: string) => Promise<void>;
+  onToggleSelect: () => void;
+  playlists: Pick<SerializedAdminPlaylist, "id" | "title">[];
   tune: SerializedAdminTune;
 }) {
-  const [draft, setDraft] = useState<TuneDraft>(() => createDraft(tune));
+  // Track the canonical title across re-renders so we can reset the local
+  // draft only when the server's value actually changes (e.g. after a save
+  // triggers a router refresh). Avoids the row-remount pattern that loses
+  // input focus mid-edit, and the setState-in-effect cascading-render trap.
+  const [title, setTitle] = useState(tune.title);
+  const [lastSyncedTitle, setLastSyncedTitle] = useState(tune.title);
+  if (lastSyncedTitle !== tune.title) {
+    setLastSyncedTitle(tune.title);
+    setTitle(tune.title);
+  }
+  const isDirty = title.trim() !== tune.title.trim();
+  const memberPlaylistIds = useMemo(
+    () => tune.playlists.map((playlist) => playlist.id),
+    [tune.playlists],
+  );
 
   return (
     <tr className="align-top">
+      <td className="px-5 py-4">
+        <label className="sr-only" htmlFor={`select-${tune.id}`}>
+          Select song
+        </label>
+        <input
+          checked={isSelected}
+          id={`select-${tune.id}`}
+          onChange={onToggleSelect}
+          type="checkbox"
+        />
+      </td>
       <td className="min-w-72 px-5 py-4">
         <label className="sr-only" htmlFor={`title-${tune.id}`}>
           Title
@@ -162,52 +337,27 @@ function TuneTableRow({
           className="field font-medium"
           disabled={isPending}
           id={`title-${tune.id}`}
-          onChange={(event) =>
-            setDraft((current) => ({ ...current, title: event.target.value }))
-          }
-          value={draft.title}
-        />
-        <label className="sr-only" htmlFor={`description-${tune.id}`}>
-          Description
-        </label>
-        <textarea
-          className="field mt-2 min-h-20 resize-y"
-          disabled={isPending}
-          id={`description-${tune.id}`}
-          onChange={(event) =>
-            setDraft((current) => ({
-              ...current,
-              description: event.target.value,
-            }))
-          }
-          placeholder="Description"
-          value={draft.description}
+          onChange={(event) => setTitle(event.target.value)}
+          value={title}
         />
       </td>
-      <td className="px-5 py-4">
-        <label className="sr-only" htmlFor={`status-${tune.id}`}>
-          Status
-        </label>
-        <select
-          className="field"
-          disabled={isPending}
-          id={`status-${tune.id}`}
-          onChange={(event) =>
-            setDraft((current) => ({
-              ...current,
-              status: event.target.value as TuneDraft["status"],
-            }))
-          }
-          value={draft.status}
-        >
-          <option value="draft">Draft</option>
-          <option value="active">Active</option>
-        </select>
-        <StatusBadge
-          className="mt-2"
-          tone={draft.status === "active" ? "active" : "muted"}
-          label={draft.status === "active" ? "Active" : "Draft"}
-        />
+      <td className="min-w-48 px-5 py-4">
+        {tune.playlists.length === 0 ? (
+          <span className="text-xs text-[hsl(var(--muted))]">—</span>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {tune.playlists.map((playlist) => (
+              <Link
+                className="pill hover:border-[hsl(var(--mood)/0.5)] hover:text-foreground"
+                href={`/admin/playlists/${playlist.id}` as Route}
+                key={playlist.id}
+                title={`Open ${playlist.title}`}
+              >
+                {playlist.title}
+              </Link>
+            ))}
+          </div>
+        )}
       </td>
       <td className="min-w-44 px-5 py-4 text-[hsl(var(--muted))]">
         <div className="font-mono text-xs">{tune.mimeType}</div>
@@ -216,22 +366,24 @@ function TuneTableRow({
           {formatDuration(tune.durationSeconds, { fallback: "—:—" })}
         </div>
       </td>
-      <td className="px-5 py-4">
-        <span className="pill">
-          {tune.playlistItemCount} use{tune.playlistItemCount === 1 ? "" : "s"}
-        </span>
-      </td>
       <td className="min-w-36 px-5 py-4 text-xs text-[hsl(var(--muted))]">
         {formatDate(tune.createdAt)}
       </td>
       <td className="px-5 py-4">
         <div className="flex gap-2">
+          <AddToPlaylistPopover
+            disabled={isPending}
+            initialSelectedIds={memberPlaylistIds}
+            onApply={onApplyPlaylists}
+            playlists={playlists}
+            triggerLabel="Add to playlist"
+          />
           <button
             aria-label={`Save ${tune.title}`}
             className="btn-ghost-icon"
-            disabled={isPending}
-            onClick={() => void onSave(tune.id, draft)}
-            title="Save tune"
+            disabled={isPending || !isDirty || title.trim() === ""}
+            onClick={() => void onSave(tune.id, title.trim())}
+            title="Rename"
             type="button"
           >
             <Save aria-hidden="true" size={16} />
@@ -241,7 +393,11 @@ function TuneTableRow({
             className="btn-danger-icon"
             disabled={isPending || !tune.canDelete}
             onClick={() => void onDelete(tune)}
-            title={tune.canDelete ? "Delete tune" : "Tune is used in a playlist"}
+            title={
+              tune.canDelete
+                ? "Delete song"
+                : "Song is in a playlist. Remove it first to delete."
+            }
             type="button"
           >
             <Trash2 aria-hidden="true" size={16} />
@@ -250,24 +406,6 @@ function TuneTableRow({
       </td>
     </tr>
   );
-}
-
-function createDraft(tune: SerializedAdminTune): TuneDraft {
-  return {
-    title: tune.title,
-    description: tune.description ?? "",
-    status: tune.status,
-  };
-}
-
-async function readError(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: string };
-
-    return body.error ?? "Request failed.";
-  } catch {
-    return "Request failed.";
-  }
 }
 
 async function readWarning(response: Response): Promise<string | null> {

@@ -1,4 +1,4 @@
-import type { PlaylistStatus, TuneStatus } from "@prisma/client";
+import type { PlaylistVisibility } from "@prisma/client";
 
 import { moveItem, normalizePositions, type PositionedItem } from "../playlist/order";
 
@@ -6,7 +6,7 @@ export type AdminPlaylistRecord = {
   id: string;
   title: string;
   description: string | null;
-  status: PlaylistStatus;
+  visibility: PlaylistVisibility;
   createdAt: Date;
   updatedAt: Date;
   _count: {
@@ -18,7 +18,7 @@ export type SerializedAdminPlaylist = {
   id: string;
   title: string;
   description: string | null;
-  status: PlaylistStatus;
+  visibility: PlaylistVisibility;
   createdAt: string;
   updatedAt: string;
   itemCount: number;
@@ -30,9 +30,7 @@ export type AdminPlaylistItemRecord = {
   tune: {
     id: string;
     title: string;
-    description: string | null;
     durationSeconds: number;
-    status: TuneStatus;
   };
 };
 
@@ -42,9 +40,7 @@ export type SerializedAdminPlaylistItem = {
   tune: {
     id: string;
     title: string;
-    description: string | null;
     durationSeconds: number;
-    status: TuneStatus;
   };
 };
 
@@ -56,12 +52,11 @@ export type PlaylistPrismaErrorResponse = {
 type PlaylistMutationData = {
   title?: string;
   description?: string | null;
-  status?: PlaylistStatus;
+  visibility?: PlaylistVisibility;
 };
 
 type PlaylistMutationOptions = {
   requireTitle: boolean;
-  defaultStatus?: PlaylistStatus;
 };
 
 type PlaylistMutationResult =
@@ -71,10 +66,6 @@ type PlaylistMutationResult =
 type PlaylistReorderResult =
   | { valid: true; data: { itemId: string; targetIndex: number } }
   | { valid: false; message: string };
-
-const playlistStatuses = new Set<string>(["draft", "published"]);
-const publishReadinessMessage =
-  "Playlist must include at least one active tune before publishing.";
 
 export function parsePlaylistMutationPayload(
   payload: unknown,
@@ -103,14 +94,15 @@ export function parsePlaylistMutationPayload(
     data.description = description || null;
   }
 
-  if ("status" in input) {
-    if (typeof input.status !== "string" || !playlistStatuses.has(input.status)) {
-      return { valid: false, message: "Status must be draft or published." };
+  if ("visibility" in input) {
+    if (input.visibility !== "hidden" && input.visibility !== "public") {
+      return {
+        valid: false,
+        message: 'Visibility must be "hidden" or "public".',
+      };
     }
 
-    data.status = input.status as PlaylistStatus;
-  } else if (options.defaultStatus) {
-    data.status = options.defaultStatus;
+    data.visibility = input.visibility;
   }
 
   return { valid: true, data };
@@ -155,25 +147,6 @@ export function buildNormalizedPlaylistItemPositions<TItem extends PositionedIte
   return normalizePositions(items);
 }
 
-export function isPlaylistPublishRequested(
-  data: { status?: PlaylistStatus },
-): boolean {
-  return data.status === "published";
-}
-
-export function validatePlaylistPublishReadiness(
-  activeTuneCount: number,
-): { valid: true } | { valid: false; message: string } {
-  if (activeTuneCount > 0) {
-    return { valid: true };
-  }
-
-  return {
-    valid: false,
-    message: publishReadinessMessage,
-  };
-}
-
 export function getPlaylistItemCreatePrismaErrorResponse(
   error: unknown,
 ): PlaylistPrismaErrorResponse | null {
@@ -213,7 +186,7 @@ export function serializeAdminPlaylist(
     id: playlist.id,
     title: playlist.title,
     description: playlist.description,
-    status: playlist.status,
+    visibility: playlist.visibility,
     createdAt: playlist.createdAt.toISOString(),
     updatedAt: playlist.updatedAt.toISOString(),
     itemCount: playlist._count.items,

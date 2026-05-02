@@ -1,10 +1,13 @@
 import { db } from "@/lib/db";
-import { jsonError, requireAdminSession } from "@/lib/http/errors";
 import {
-  isPlaylistPublishRequested,
+  enforceSameOrigin,
+  jsonError,
+  recordAudit,
+  requireAdminSession,
+} from "@/lib/http/errors";
+import {
   parsePlaylistMutationPayload,
   serializeAdminPlaylist,
-  validatePlaylistPublishReadiness,
 } from "@/lib/playlists/admin";
 
 export const runtime = "nodejs";
@@ -31,6 +34,9 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const csrf = await enforceSameOrigin(request);
+  if (csrf) return csrf;
+
   const session = await requireAdminSession();
 
   if (!session) {
@@ -47,31 +53,35 @@ export async function POST(request: Request): Promise<Response> {
 
   const validation = parsePlaylistMutationPayload(payload, {
     requireTitle: true,
-    defaultStatus: "draft",
   });
 
   if (!validation.valid) {
     return jsonError(validation.message, 400);
   }
 
-  if (isPlaylistPublishRequested(validation.data)) {
-    const readiness = validatePlaylistPublishReadiness(0);
-
-    if (!readiness.valid) {
-      return jsonError(readiness.message, 400);
-    }
-  }
-
   const playlist = await db.playlist.create({
     data: {
       title: validation.data.title ?? "",
       description: validation.data.description ?? null,
-      status: validation.data.status ?? "draft",
+      // Visibility intentionally defaults to hidden so newly created
+      // playlists are never public until an admin opts in.
+      ...(validation.data.visibility ? { visibility: validation.data.visibility } : {}),
     },
     include: {
       _count: {
         select: { items: true },
       },
+    },
+  });
+
+  await recordAudit({
+    actorId: session.userId,
+    action: "playlist.create",
+    resource: "playlist",
+    resourceId: playlist.id,
+    metadata: {
+      title: playlist.title,
+      visibility: playlist.visibility,
     },
   });
 

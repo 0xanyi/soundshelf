@@ -1,5 +1,11 @@
 import { db } from "@/lib/db";
-import { jsonError, requireAdminSession } from "@/lib/http/errors";
+import {
+  enforceSameOrigin,
+  isValidCuid,
+  jsonError,
+  recordAudit,
+  requireAdminSession,
+} from "@/lib/http/errors";
 import { deleteAudioObject } from "@/lib/r2";
 import {
   getTuneDeletePrismaErrorResponse,
@@ -16,10 +22,27 @@ type TuneRouteContext = {
   }>;
 };
 
+const tunePlaylistInclude = {
+  _count: {
+    select: { playlistItems: true },
+  },
+  playlistItems: {
+    select: {
+      playlist: {
+        select: { id: true, title: true },
+      },
+    },
+    orderBy: { playlist: { title: "asc" } },
+  },
+} as const;
+
 export async function PATCH(
   request: Request,
   context: TuneRouteContext,
 ): Promise<Response> {
+  const csrf = await enforceSameOrigin(request);
+  if (csrf) return csrf;
+
   const session = await requireAdminSession();
 
   if (!session) {
@@ -41,6 +64,11 @@ export async function PATCH(
   }
 
   const { tuneId } = await context.params;
+
+  if (!isValidCuid(tuneId)) {
+    return jsonError("Invalid tune id.", 400);
+  }
+
   const existingTune = await db.tune.findUnique({
     where: { id: tuneId },
     select: { id: true },
@@ -53,20 +81,27 @@ export async function PATCH(
   const tune = await db.tune.update({
     where: { id: tuneId },
     data: validation.data,
-    include: {
-      _count: {
-        select: { playlistItems: true },
-      },
-    },
+    include: tunePlaylistInclude,
+  });
+
+  await recordAudit({
+    actorId: session.userId,
+    action: "tune.update",
+    resource: "tune",
+    resourceId: tuneId,
+    metadata: { title: validation.data.title },
   });
 
   return Response.json(serializeAdminTune(tune));
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: TuneRouteContext,
 ): Promise<Response> {
+  const csrf = await enforceSameOrigin(request);
+  if (csrf) return csrf;
+
   const session = await requireAdminSession();
 
   if (!session) {
@@ -74,6 +109,11 @@ export async function DELETE(
   }
 
   const { tuneId } = await context.params;
+
+  if (!isValidCuid(tuneId)) {
+    return jsonError("Invalid tune id.", 400);
+  }
+
   const tune = await db.tune.findUnique({
     where: { id: tuneId },
     include: {
@@ -105,12 +145,19 @@ export async function DELETE(
     throw error;
   }
 
+  await recordAudit({
+    actorId: session.userId,
+    action: "tune.delete",
+    resource: "tune",
+    resourceId: tuneId,
+    metadata: { title: tune.title },
+  });
+
   try {
     await deleteAudioObject(tune.r2ObjectKey);
   } catch (error) {
     console.error("Tune metadata deleted but R2 object cleanup failed.", {
       error,
-      r2ObjectKey: tune.r2ObjectKey,
       tuneId,
     });
 
