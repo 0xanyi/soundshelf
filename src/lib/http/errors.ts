@@ -5,6 +5,24 @@ import { db } from "@/lib/db";
 
 const safeMethods = new Set(["GET", "HEAD", "OPTIONS"]);
 
+function configuredPublicHost(): string | null {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.BETTER_AUTH_URL;
+
+  if (!appUrl) {
+    return null;
+  }
+
+  try {
+    return new URL(appUrl).host;
+  } catch {
+    return null;
+  }
+}
+
+function isAllowedRequestHost(host: string, requestHost: string): boolean {
+  return host === requestHost || host === configuredPublicHost();
+}
+
 export function jsonError(message: string, status: number): Response {
   return Response.json({ error: message }, { status });
 }
@@ -65,7 +83,7 @@ export async function enforceSameOrigin(request: Request): Promise<Response | nu
 
   if (origin) {
     try {
-      if (new URL(origin).host === requestUrl.host) {
+      if (isAllowedRequestHost(new URL(origin).host, requestUrl.host)) {
         return null;
       }
     } catch {
@@ -73,7 +91,7 @@ export async function enforceSameOrigin(request: Request): Promise<Response | nu
     }
   } else if (referer) {
     try {
-      if (new URL(referer).host === requestUrl.host) {
+      if (isAllowedRequestHost(new URL(referer).host, requestUrl.host)) {
         return null;
       }
     } catch {
