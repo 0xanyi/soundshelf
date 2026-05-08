@@ -4,6 +4,7 @@ import type { Route } from "next";
 import type { ReactNode } from "react";
 
 import { AdminNav } from "@/components/admin/admin-nav";
+import { SignOutButton } from "@/components/admin/sign-out-button";
 import { BrandIcon } from "@/components/ui/brand-icon";
 import { auth } from "@/lib/auth";
 
@@ -47,6 +48,7 @@ export default async function AdminLayout({
               >
                 {session?.user?.email ?? "Admin"}
               </p>
+              <SignOutButton />
             </div>
           </div>
         </aside>

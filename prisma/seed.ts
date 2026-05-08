@@ -47,17 +47,22 @@ async function main() {
   const db = new PrismaClient({ adapter });
 
   try {
+    // The role is asserted on every run so an admin account that lost the
+    // privilege (e.g. created before the role column existed) is healed by
+    // the next deployment without a manual database edit.
     const user = await db.user.upsert({
       where: { email: env.email },
       update: {
         name: env.name,
         emailVerified: true,
+        role: "admin",
       },
       create: {
         id: randomUUID(),
         email: env.email,
         name: env.name,
         emailVerified: true,
+        role: "admin",
       },
     });
 
@@ -70,7 +75,7 @@ async function main() {
 
     if (existingCredentialAccount) {
       console.info(
-        `Admin user ${env.email} already has a credential account; seed is a no-op.`
+        `Admin user ${env.email} already has a credential account; ensured role=admin.`
       );
       return;
     }
