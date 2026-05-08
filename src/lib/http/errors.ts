@@ -5,22 +5,25 @@ import { db } from "@/lib/db";
 
 const safeMethods = new Set(["GET", "HEAD", "OPTIONS"]);
 
-function configuredPublicHost(): string | null {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.BETTER_AUTH_URL;
-
-  if (!appUrl) {
-    return null;
+function forwardedHost(request: Request): string | null {
+  // Trust the proxy-supplied Host so that requests entering the app via an
+  // internal address (e.g. http://localhost:3000) still compare correctly
+  // against the public Origin the browser sent.
+  const forwarded = request.headers.get("x-forwarded-host");
+  if (forwarded) {
+    return forwarded.split(",")[0].trim();
   }
 
-  try {
-    return new URL(appUrl).host;
-  } catch {
-    return null;
-  }
+  return request.headers.get("host");
 }
 
-function isAllowedRequestHost(host: string, requestHost: string): boolean {
-  return host === requestHost || host === configuredPublicHost();
+function isAllowedRequestHost(host: string, request: Request, requestUrl: URL): boolean {
+  if (host === requestUrl.host) {
+    return true;
+  }
+
+  const forwarded = forwardedHost(request);
+  return forwarded !== null && host === forwarded;
 }
 
 export function jsonError(message: string, status: number): Response {
@@ -83,7 +86,7 @@ export async function enforceSameOrigin(request: Request): Promise<Response | nu
 
   if (origin) {
     try {
-      if (isAllowedRequestHost(new URL(origin).host, requestUrl.host)) {
+      if (isAllowedRequestHost(new URL(origin).host, request, requestUrl)) {
         return null;
       }
     } catch {
@@ -91,7 +94,7 @@ export async function enforceSameOrigin(request: Request): Promise<Response | nu
     }
   } else if (referer) {
     try {
-      if (isAllowedRequestHost(new URL(referer).host, requestUrl.host)) {
+      if (isAllowedRequestHost(new URL(referer).host, request, requestUrl)) {
         return null;
       }
     } catch {

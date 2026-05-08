@@ -38,24 +38,28 @@ describe("enforceSameOrigin", () => {
     expect(await enforceSameOrigin(request)).toBeNull();
   });
 
-  it("allows the configured public app origin when the request URL is internal", async () => {
-    const originalAppUrl = process.env.NEXT_PUBLIC_APP_URL;
-    process.env.NEXT_PUBLIC_APP_URL = "https://music.example.com";
+  it("allows the request when Origin matches the forwarded Host header", async () => {
+    const request = new Request("http://localhost:3000/api/admin/playlists/abc", {
+      method: "PATCH",
+      headers: {
+        origin: "https://music.example.com",
+        "x-forwarded-host": "music.example.com",
+      },
+    });
 
-    try {
-      const request = new Request("http://localhost:3000/api/admin/playlists/abc", {
-        method: "PATCH",
-        headers: { origin: "https://music.example.com" },
-      });
+    expect(await enforceSameOrigin(request)).toBeNull();
+  });
 
-      expect(await enforceSameOrigin(request)).toBeNull();
-    } finally {
-      if (originalAppUrl === undefined) {
-        delete process.env.NEXT_PUBLIC_APP_URL;
-      } else {
-        process.env.NEXT_PUBLIC_APP_URL = originalAppUrl;
-      }
-    }
+  it("allows the request when Origin matches the Host header", async () => {
+    const request = new Request("http://localhost:3000/api/admin/playlists/abc", {
+      method: "PATCH",
+      headers: {
+        origin: "https://music.example.com",
+        host: "music.example.com",
+      },
+    });
+
+    expect(await enforceSameOrigin(request)).toBeNull();
   });
 
   it("rejects cross-origin requests", async () => {
