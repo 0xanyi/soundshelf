@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { formatTotalDuration } from "../../src/lib/format";
+import { formatDate, formatTotalDuration } from "../../src/lib/format";
+
+describe("formatDate", () => {
+  it("formats dates in UTC so server and browser text match", () => {
+    expect(formatDate("2026-05-08T00:30:00.000Z")).toBe("May 8, 2026, 12:30 AM");
+  });
+});
 
 describe("formatTotalDuration", () => {
   it("uses full singular and plural duration units", () => {
