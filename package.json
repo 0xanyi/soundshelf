@@ -30,6 +30,17 @@
     "react-dom": "^19.2.5",
     "zod": "^4.3.6"
   },
+  "overrides": {
+    "@hono/node-server": "^1.19.13",
+    "postcss": "^8.5.15"
+  },
+  "maintenanceNotes": {
+    "eslint": "TODO: bump to eslint@^10 once eslint-config-next ships an eslint-plugin-react bundle compatible with ESLint 10's rule context API (10.4.0 currently crashes with `contextOrFilename.getFilename is not a function`)."
+  },
+  "overridesNote": {
+    "@hono/node-server": "Patches GHSA-92pp-h63x-v22m (middleware bypass) in prisma > @prisma/dev. Re-evaluate when prisma bumps @prisma/dev past hono 1.19.13: `npm ls @hono/node-server` should show >=1.19.13 without this override.",
+    "postcss": "Patches GHSA-qx2v-qp2m-jg93 (XSS via unescaped </style>) in next's nested postcss. Re-evaluate when next ships postcss >=8.5.10 transitively. Must stay in lockstep with the direct devDependency `postcss` range below (autoprefixer requires postcss as a peer dep), or npm throws EOVERRIDE."
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.4",
     "@testing-library/jest-dom": "^6.9.1",
@@ -44,7 +55,7 @@
     "eslint-config-next": "^16.2.4",
     "jsdom": "^29.1.0",
     "playwright": "^1.59.1",
-    "postcss": "^8.5.12",
+    "postcss": "^8.5.15",
     "prisma": "^7.8.0",
     "tailwindcss": "^4.2.4",
     "tsx": "^4.21.0",
