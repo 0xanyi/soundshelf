@@ -1,7 +1,8 @@
 "use client";
 
-import { AlertCircle, Music2, Play, RefreshCw, X } from "lucide-react";
+import { AlertCircle, Check, Link2, Music2, Play, RefreshCw, X } from "lucide-react";
 import type { CSSProperties } from "react";
+import { useEffect, useState } from "react";
 
 import type { PlayerTrack } from "@/components/player/audio-player";
 import type {
@@ -46,6 +47,86 @@ export function BrandHeader() {
 }
 
 /* ---------------- Playlist card library ---------------- */
+
+type ShareState = "idle" | "copied" | "error";
+
+export function SharePlaylistButton({
+  disabled,
+  getShareUrl,
+}: {
+  disabled: boolean;
+  getShareUrl: () => string | null;
+}) {
+  const [state, setState] = useState<ShareState>("idle");
+
+  useEffect(() => {
+    if (state === "idle") {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setState("idle"), 2200);
+    return () => window.clearTimeout(timeout);
+  }, [state]);
+
+  const label =
+    state === "copied"
+      ? "Link copied"
+      : state === "error"
+        ? "Copy failed"
+        : "Share playlist";
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-full border border-[hsl(var(--border)/0.7)] bg-[hsl(var(--surface)/0.62)] px-4 font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-[hsl(var(--foreground)/0.82)] transition hover:border-[hsl(var(--mood)/0.4)] hover:bg-[hsl(var(--surface-2)/0.78)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mood)/0.35)] disabled:cursor-not-allowed disabled:opacity-40"
+      onClick={async () => {
+        const shareUrl = getShareUrl();
+
+        if (!shareUrl) {
+          return;
+        }
+
+        try {
+          await copyText(shareUrl);
+          setState("copied");
+        } catch {
+          setState("error");
+        }
+      }}
+    >
+      {state === "copied" ? (
+        <Check size={14} aria-hidden="true" />
+      ) : (
+        <Link2 size={14} aria-hidden="true" />
+      )}
+      {label}
+    </button>
+  );
+}
+
+async function copyText(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.top = "-9999px";
+  document.body.append(textarea);
+  textarea.select();
+
+  try {
+    if (!document.execCommand("copy")) {
+      throw new Error("Copy command failed.");
+    }
+  } finally {
+    textarea.remove();
+  }
+}
 
 export function PlaylistCardLibrary({
   error,

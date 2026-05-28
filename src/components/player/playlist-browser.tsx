@@ -8,6 +8,7 @@ import {
   BrandHeader,
   PlaylistCardLibrary,
   PlaylistQueuePanel,
+  SharePlaylistButton,
 } from "@/components/player/browser/playlist-browser-ui";
 import type {
   LoadState,
@@ -17,9 +18,28 @@ import type {
 import { safeDuration } from "@/lib/format";
 import { getMood } from "@/lib/mood";
 
-export function PlaylistBrowser() {
+const sharedPlaylistSearchParam = "playlist";
+
+function getPlaylistShareUrl(playlistId: string): string {
+  const url = new URL(window.location.pathname, window.location.origin);
+  url.searchParams.set(sharedPlaylistSearchParam, playlistId);
+  return url.toString();
+}
+
+function replacePlaylistUrl(playlistId: string): void {
+  const url = getPlaylistShareUrl(playlistId);
+  window.history.replaceState(window.history.state, "", url);
+}
+
+export function PlaylistBrowser({
+  initialPlaylistId = null,
+}: {
+  initialPlaylistId?: string | null;
+}) {
   const [playlists, setPlaylists] = useState<PublicPlaylistSummary[]>([]);
-  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(() =>
+    initialPlaylistId,
+  );
   const [selectedPlaylist, setSelectedPlaylist] =
     useState<PublicPlaylistDetail | null>(null);
   const [listState, setListState] = useState<LoadState>("loading");
@@ -188,7 +208,16 @@ export function PlaylistBrowser() {
   const handleSelectPlaylist = useCallback((playlistId: string) => {
     setSelectedPlaylistId(playlistId);
     setIsTracksOpen(false);
+    replacePlaylistUrl(playlistId);
   }, []);
+
+  const getCurrentPlaylistShareUrl = useCallback(() => {
+    if (!selectedPlaylistId) {
+      return null;
+    }
+
+    return getPlaylistShareUrl(selectedPlaylistId);
+  }, [selectedPlaylistId]);
 
   return (
     <main
@@ -227,8 +256,19 @@ export function PlaylistBrowser() {
           </section>
 
           <section>
-            <div className="mb-4">
-              <p className="kicker">Curations</p>
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="kicker">Curations</p>
+                {currentPlaylistTitle ? (
+                  <p className="mt-1 text-sm text-[hsl(var(--muted))]">
+                    Sharing {currentPlaylistTitle}
+                  </p>
+                ) : null}
+              </div>
+              <SharePlaylistButton
+                disabled={!selectedPlaylistId}
+                getShareUrl={getCurrentPlaylistShareUrl}
+              />
             </div>
             <PlaylistCardLibrary
               error={listError}
