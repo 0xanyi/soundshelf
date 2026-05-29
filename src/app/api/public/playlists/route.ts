@@ -1,5 +1,8 @@
 import { db } from "@/lib/db";
-import { serializePublicPlaylistSummary } from "@/lib/playlists/public";
+import {
+  type PublicPlaylistSummaryRecord,
+  serializePublicPlaylistSummary,
+} from "@/lib/playlists/public";
 
 export const runtime = "nodejs";
 
@@ -32,7 +35,7 @@ export async function GET(): Promise<Response> {
     },
   });
 
-  const serializedPlaylists = playlists
+  const serializedPlaylists = (playlists as PublicPlaylistSummaryRecord[])
     .map(serializePublicPlaylistSummary)
     .filter((playlist) => playlist.itemCount > 0);
 

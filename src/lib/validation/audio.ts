@@ -49,7 +49,9 @@ export function getMaxAudioUploadBytes(): number {
     !Number.isSafeInteger(maxBytes) ||
     maxBytes <= 0
   ) {
-    return MAX_AUDIO_UPLOAD_BYTES;
+    throw new Error(
+      "MAX_AUDIO_UPLOAD_BYTES must be a positive whole number of bytes.",
+    );
   }
 
   return maxBytes;

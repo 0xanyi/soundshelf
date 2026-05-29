@@ -1,7 +1,10 @@
 import { db } from "@/lib/db";
 import { jsonError } from "@/lib/http/errors";
 import { getSignedAudioUrl } from "@/lib/r2";
-import { serializePublicPlaylistDetail } from "@/lib/playlists/public";
+import {
+  PublicPlaylistSigningError,
+  serializePublicPlaylistDetail,
+} from "@/lib/playlists/public";
 
 export const runtime = "nodejs";
 
@@ -48,10 +51,25 @@ export async function GET(
     return jsonError("Playlist not found.", 404);
   }
 
-  const serializedPlaylist = await serializePublicPlaylistDetail(
-    playlist,
-    getSignedAudioUrl,
-  );
+  let serializedPlaylist;
+
+  try {
+    serializedPlaylist = await serializePublicPlaylistDetail(
+      playlist,
+      getSignedAudioUrl,
+    );
+  } catch (error) {
+    if (error instanceof PublicPlaylistSigningError) {
+      console.error("Failed to sign public playlist audio URLs", {
+        playlistId,
+        failedTrackCount: error.failedTrackCount,
+      });
+
+      return jsonError("Audio is temporarily unavailable.", 502);
+    }
+
+    throw error;
+  }
 
   if (!serializedPlaylist) {
     return jsonError("Playlist not found.", 404);

@@ -1,3 +1,5 @@
+import { Prisma, type PrismaClient } from "@prisma/client";
+
 import { db } from "@/lib/db";
 import {
   enforceSameOrigin,
@@ -24,6 +26,12 @@ type PlaylistItemsRouteContext = {
 };
 
 const maxAddItemAttempts = 3;
+const maxPositionUpdateAttempts = 3;
+
+type TransactionClient = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$use" | "$extends"
+>;
 
 export async function POST(
   request: Request,
@@ -85,7 +93,7 @@ export async function POST(
 
   for (let attempt = 1; attempt <= maxAddItemAttempts; attempt += 1) {
     try {
-      const item = await db.$transaction(async (tx) => {
+      const item = await db.$transaction(async (tx: TransactionClient) => {
         const lastItem = await tx.playlistItem.findFirst({
           where: { playlistId },
           orderBy: { position: "desc" },
@@ -173,32 +181,25 @@ export async function PATCH(
     return jsonError("Invalid playlist id.", 400);
   }
 
-  const playlist = await db.playlist.findUnique({
-    where: { id: playlistId },
-    select: {
-      id: true,
-      items: {
-        orderBy: [{ position: "asc" }, { createdAt: "asc" }],
-        select: { id: true, position: true },
-      },
-    },
-  });
-
-  if (!playlist) {
-    return jsonError("Playlist not found.", 404);
-  }
-
-  if (!playlist.items.some((item) => item.id === validation.data.itemId)) {
-    return jsonError("Playlist item not found.", 404);
-  }
-
-  const nextItems = buildMovedPlaylistItemPositions(
-    playlist.items,
+  const reorderResult = await movePlaylistItemWithRetry(
+    playlistId,
     validation.data.itemId,
     validation.data.targetIndex,
   );
 
-  await updatePlaylistItemPositions(nextItems);
+  if (reorderResult.status === "playlist-not-found") {
+    return jsonError("Playlist not found.", 404);
+  }
+
+  if (reorderResult.status === "item-not-found") {
+    return jsonError("Playlist item not found.", 404);
+  }
+
+  if (reorderResult.status === "conflict") {
+    return jsonError("Playlist order changed. Please try again.", 409);
+  }
+
+  const nextItems = reorderResult.items;
 
   await recordAudit({
     actorId: session.userId,
@@ -254,34 +255,21 @@ export async function DELETE(
     return jsonError("Invalid playlist id.", 400);
   }
 
-  const playlist = await db.playlist.findUnique({
-    where: { id: playlistId },
-    select: {
-      id: true,
-      items: {
-        orderBy: [{ position: "asc" }, { createdAt: "asc" }],
-        select: { id: true, position: true },
-      },
-    },
-  });
+  const deleteResult = await deletePlaylistItemWithRetry(playlistId, itemId);
 
-  if (!playlist) {
+  if (deleteResult.status === "playlist-not-found") {
     return jsonError("Playlist not found.", 404);
   }
 
-  if (!playlist.items.some((item) => item.id === itemId)) {
+  if (deleteResult.status === "item-not-found") {
     return jsonError("Playlist item not found.", 404);
   }
 
-  await db.playlistItem.delete({
-    where: { id: itemId },
-  });
+  if (deleteResult.status === "conflict") {
+    return jsonError("Playlist order changed. Please try again.", 409);
+  }
 
-  const nextItems = buildNormalizedPlaylistItemPositions(
-    playlist.items.filter((item) => item.id !== itemId),
-  );
-
-  await updatePlaylistItemPositions(nextItems);
+  const nextItems = deleteResult.items;
 
   await recordAudit({
     actorId: session.userId,
@@ -294,27 +282,171 @@ export async function DELETE(
   return Response.json({ items: nextItems });
 }
 
+type PlaylistPositionResult =
+  | { status: "ok"; items: Array<{ id: string; position: number }> }
+  | { status: "playlist-not-found" }
+  | { status: "item-not-found" }
+  | { status: "conflict" };
+
+type PlaylistPositionItem = { id: string; position: number };
+
+async function movePlaylistItemWithRetry(
+  playlistId: string,
+  itemId: string,
+  targetIndex: number,
+): Promise<PlaylistPositionResult> {
+  for (let attempt = 1; attempt <= maxPositionUpdateAttempts; attempt += 1) {
+    try {
+      return await db.$transaction(
+        async (tx: TransactionClient) => {
+          const playlist = await tx.playlist.findUnique({
+            where: { id: playlistId },
+            select: {
+              id: true,
+              items: {
+                orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+                select: { id: true, position: true },
+              },
+            },
+          });
+
+          if (!playlist) {
+            return { status: "playlist-not-found" } as const;
+          }
+
+          const currentItems = playlist.items as PlaylistPositionItem[];
+
+          if (!currentItems.some((item) => item.id === itemId)) {
+            return { status: "item-not-found" } as const;
+          }
+
+          const items = buildMovedPlaylistItemPositions(
+            currentItems,
+            itemId,
+            targetIndex,
+          );
+
+          await updatePlaylistItemPositions(tx, items);
+
+          return { status: "ok", items } as const;
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+    } catch (error) {
+      if (isRetryablePlaylistPositionError(error) && attempt < maxPositionUpdateAttempts) {
+        continue;
+      }
+
+      if (isRetryablePlaylistPositionError(error)) {
+        return { status: "conflict" };
+      }
+
+      throw error;
+    }
+  }
+
+  return { status: "conflict" };
+}
+
+async function deletePlaylistItemWithRetry(
+  playlistId: string,
+  itemId: string,
+): Promise<PlaylistPositionResult> {
+  for (let attempt = 1; attempt <= maxPositionUpdateAttempts; attempt += 1) {
+    try {
+      return await db.$transaction(
+        async (tx: TransactionClient) => {
+          const playlist = await tx.playlist.findUnique({
+            where: { id: playlistId },
+            select: {
+              id: true,
+              items: {
+                orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+                select: { id: true, position: true },
+              },
+            },
+          });
+
+          if (!playlist) {
+            return { status: "playlist-not-found" } as const;
+          }
+
+          const currentItems = playlist.items as PlaylistPositionItem[];
+
+          if (!currentItems.some((item) => item.id === itemId)) {
+            return { status: "item-not-found" } as const;
+          }
+
+          await tx.playlistItem.delete({
+            where: { id: itemId },
+          });
+
+          const items = buildNormalizedPlaylistItemPositions(
+            currentItems.filter((item) => item.id !== itemId),
+          );
+
+          await updatePlaylistItemPositions(tx, items);
+
+          return { status: "ok", items } as const;
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+    } catch (error) {
+      if (isRetryablePlaylistPositionError(error) && attempt < maxPositionUpdateAttempts) {
+        continue;
+      }
+
+      if (isRetryablePlaylistPositionError(error)) {
+        return { status: "conflict" };
+      }
+
+      throw error;
+    }
+  }
+
+  return { status: "conflict" };
+}
+
+type PlaylistItemPositionClient = Pick<TransactionClient, "playlistItem">;
+
 async function updatePlaylistItemPositions(
+  client: PlaylistItemPositionClient,
   items: Array<{ id: string; position: number }>,
 ): Promise<void> {
   if (items.length === 0) {
     return;
   }
 
-  await db.$transaction([
+  await Promise.all([
     ...items.map((item, index) =>
-      db.playlistItem.update({
+      client.playlistItem.update({
         where: { id: item.id },
         data: { position: -(index + 1) },
       }),
     ),
+  ]);
+
+  await Promise.all([
     ...items.map((item) =>
-      db.playlistItem.update({
+      client.playlistItem.update({
         where: { id: item.id },
         data: { position: item.position },
       }),
     ),
   ]);
+}
+
+function isRetryablePlaylistPositionError(error: unknown): boolean {
+  return isPlaylistItemPositionConflict(error) || isPrismaTransactionConflict(error);
+}
+
+function isPrismaTransactionConflict(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2034"
+  );
 }
 
 function parseStringField(payload: object, fieldName: string): string {

@@ -21,6 +21,7 @@ type PutAudioObjectInput = {
   key: string;
   body: PutObjectCommandInput["Body"];
   contentType: string;
+  preventOverwrite?: boolean;
 };
 
 let cachedClient: S3Client | null = null;
@@ -51,6 +52,7 @@ export async function putAudioObject({
   key,
   body,
   contentType,
+  preventOverwrite = false,
 }: PutAudioObjectInput): Promise<void> {
   const env = getR2Env();
 
@@ -60,6 +62,7 @@ export async function putAudioObject({
       Key: key,
       Body: body,
       ContentType: contentType,
+      IfNoneMatch: preventOverwrite ? "*" : undefined,
     }),
   );
 }
@@ -88,7 +91,7 @@ export async function getSignedAudioUrl(key: string): Promise<string> {
   );
 }
 
-export function buildTuneObjectKey(fileName: string): string {
+export function buildTuneObjectKey(fileName: string, objectId: string = randomUUID()): string {
   const now = new Date();
   const year = String(now.getUTCFullYear());
   const month = String(now.getUTCMonth() + 1).padStart(2, "0");
@@ -96,7 +99,7 @@ export function buildTuneObjectKey(fileName: string): string {
   const safeBaseName = slugify(parsedName.name) || "audio";
   const safeExtension = sanitizeExtension(extname(fileName));
 
-  return `audio/tunes/${year}/${month}/${safeBaseName}-${randomUUID()}${safeExtension}`;
+  return `audio/tunes/${year}/${month}/${safeBaseName}-${objectId}${safeExtension}`;
 }
 
 function getR2Env(): R2Env {

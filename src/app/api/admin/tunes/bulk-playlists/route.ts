@@ -1,3 +1,5 @@
+import type { PrismaClient } from "@prisma/client";
+
 import { db } from "@/lib/db";
 import {
   enforceSameOrigin,
@@ -14,6 +16,11 @@ export const runtime = "nodejs";
 // constraint when two requests pick the same "next" position. Retrying with a
 // fresh transaction is cheap and bounded.
 const MAX_BULK_ADD_ATTEMPTS = 3;
+
+type TransactionClient = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$use" | "$extends"
+>;
 
 export async function POST(request: Request): Promise<Response> {
   const csrf = await enforceSameOrigin(request);
@@ -101,7 +108,7 @@ async function addTunesToPlaylist(
 ): Promise<{ added: number; skipped: number }> {
   for (let attempt = 1; attempt <= MAX_BULK_ADD_ATTEMPTS; attempt += 1) {
     try {
-      return await db.$transaction(async (tx) => {
+      return await db.$transaction(async (tx: TransactionClient) => {
         const last = await tx.playlistItem.findFirst({
           where: { playlistId },
           orderBy: { position: "desc" },
@@ -112,7 +119,9 @@ async function addTunesToPlaylist(
           where: { playlistId, tuneId: { in: tuneIds } },
           select: { tuneId: true },
         });
-        const existingTuneIds = new Set(existing.map((item) => item.tuneId));
+        const existingTuneIds = new Set(
+          (existing as Array<{ tuneId: string }>).map((item) => item.tuneId),
+        );
 
         const toAdd = tuneIds.filter((id) => !existingTuneIds.has(id));
 

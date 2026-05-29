@@ -10,6 +10,7 @@ import { formatBytes } from "@/lib/format";
 export function TuneUploadForm() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadAttemptIdRef = useRef(crypto.randomUUID());
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState<{
@@ -27,6 +28,7 @@ export function TuneUploadForm() {
 
     const formData = new FormData();
     formData.set("file", selectedFile);
+    formData.set("uploadAttemptId", uploadAttemptIdRef.current);
 
     setIsUploading(true);
     setMessage(null);
@@ -53,6 +55,7 @@ export function TuneUploadForm() {
         text: "Upload complete. Song is live.",
       });
       setSelectedFile(null);
+      uploadAttemptIdRef.current = crypto.randomUUID();
 
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -110,6 +113,7 @@ export function TuneUploadForm() {
               name="file"
               onChange={(event) => {
                 setSelectedFile(event.target.files?.[0] ?? null);
+                uploadAttemptIdRef.current = crypto.randomUUID();
                 setMessage(null);
               }}
               ref={fileInputRef}

@@ -7,6 +7,7 @@ import { AdminNav } from "@/components/admin/admin-nav";
 import { SignOutButton } from "@/components/admin/sign-out-button";
 import { BrandIcon } from "@/components/ui/brand-icon";
 import { auth } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/http/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,12 @@ export default async function AdminLayout({
     redirect("/admin/login" as Route);
   }
 
+  const adminSession = isLoginPage ? null : await requireAdminSession();
+
+  if (!isLoginPage && !adminSession) {
+    redirect("/admin/login" as Route);
+  }
+
   if (isLoginPage) {
     return children;
   }
@@ -44,9 +51,9 @@ export default async function AdminLayout({
               </p>
               <p
                 className="mt-1 truncate text-sm font-medium"
-                title={session?.user?.email ?? ""}
+                title={adminSession?.email ?? ""}
               >
-                {session?.user?.email ?? "Admin"}
+                {adminSession?.email ?? "Admin"}
               </p>
               <SignOutButton />
             </div>
