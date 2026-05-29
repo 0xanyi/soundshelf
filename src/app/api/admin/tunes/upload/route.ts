@@ -60,8 +60,22 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const durationSeconds = parseDurationField(formData.get("durationSeconds"));
+  const uploadAttemptId = parseUploadAttemptId(formData.get("uploadAttemptId"));
 
-  const objectKey = buildTuneObjectKey(uploadedFile.name);
+  if (uploadAttemptId === null) {
+    return jsonError("Invalid upload attempt id.", 400);
+  }
+
+  const objectKey = buildTuneObjectKey(uploadedFile.name, uploadAttemptId);
+  const existingTune = await db.tune.findUnique({
+    where: { r2ObjectKey: objectKey },
+    select: uploadedTuneSelect,
+  });
+
+  if (existingTune) {
+    return Response.json(serializeAdminTune(existingTune));
+  }
+
   const body = Buffer.from(await uploadedFile.arrayBuffer());
 
   try {
@@ -69,6 +83,7 @@ export async function POST(request: Request): Promise<Response> {
       key: objectKey,
       body,
       contentType: uploadedFile.type,
+      preventOverwrite: true,
     });
   } catch (error) {
     console.error("Failed to upload tune audio to R2", error);
@@ -85,18 +100,7 @@ export async function POST(request: Request): Promise<Response> {
         fileSizeBytes: BigInt(uploadedFile.size),
         r2ObjectKey: objectKey,
       },
-      select: {
-        id: true,
-        title: true,
-        durationSeconds: true,
-        mimeType: true,
-        fileSizeBytes: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: { playlistItems: true },
-        },
-      },
+      select: uploadedTuneSelect,
     });
 
     await recordAudit({
@@ -113,6 +117,17 @@ export async function POST(request: Request): Promise<Response> {
 
     return Response.json(serializeAdminTune(tune), { status: 201 });
   } catch (error) {
+    if (isTuneObjectKeyConflict(error)) {
+      const existingTune = await db.tune.findUnique({
+        where: { r2ObjectKey: objectKey },
+        select: uploadedTuneSelect,
+      });
+
+      if (existingTune) {
+        return Response.json(serializeAdminTune(existingTune));
+      }
+    }
+
     console.error("Failed to create tune record", error);
 
     try {
@@ -126,6 +141,64 @@ export async function POST(request: Request): Promise<Response> {
 
     return jsonError("Tune could not be saved.", 500);
   }
+}
+
+const uploadedTuneSelect = {
+  id: true,
+  title: true,
+  durationSeconds: true,
+  mimeType: true,
+  fileSizeBytes: true,
+  createdAt: true,
+  updatedAt: true,
+  _count: {
+    select: { playlistItems: true },
+  },
+} as const;
+
+function parseUploadAttemptId(field: FormDataEntryValue | null): string | undefined | null {
+  if (field === null || field === undefined) {
+    return undefined;
+  }
+
+  if (typeof field !== "string" || field.trim() === "") {
+    return null;
+  }
+
+  const value = field.trim();
+
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  )
+    ? value
+    : null;
+}
+
+function isTuneObjectKeyConflict(error: unknown): boolean {
+  if (!isPrismaKnownRequestErrorShape(error) || error.code !== "P2002") {
+    return false;
+  }
+
+  const target = error.meta?.target;
+
+  if (Array.isArray(target)) {
+    return target.includes("r2ObjectKey");
+  }
+
+  return typeof target === "string" && target.includes("r2ObjectKey");
+}
+
+function isPrismaKnownRequestErrorShape(
+  error: unknown,
+): error is { code: string; clientVersion: string; meta?: { target?: unknown } } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof error.code === "string" &&
+    "clientVersion" in error &&
+    typeof error.clientVersion === "string"
+  );
 }
 
 function getValidationStatus(

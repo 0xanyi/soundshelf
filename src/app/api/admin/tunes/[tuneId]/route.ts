@@ -159,6 +159,7 @@ export async function DELETE(
     console.error("Tune metadata deleted but R2 object cleanup failed.", {
       error,
       tuneId,
+      r2ObjectKey: tune.r2ObjectKey,
     });
 
     return Response.json(getTuneDeleteStorageCleanupWarning(), { status: 202 });

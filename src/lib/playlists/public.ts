@@ -57,6 +57,13 @@ export type SerializedPublicPlaylistDetail = {
 
 type SignAudioUrl = (key: string) => Promise<string>;
 
+export class PublicPlaylistSigningError extends Error {
+  constructor(public readonly failedTrackCount: number) {
+    super("Public playlist audio URLs could not be signed.");
+    this.name = "PublicPlaylistSigningError";
+  }
+}
+
 export function serializePublicPlaylistSummary(
   playlist: PublicPlaylistSummaryRecord,
 ): SerializedPublicPlaylistSummary {
@@ -78,19 +85,28 @@ export async function serializePublicPlaylistDetail(
 ): Promise<SerializedPublicPlaylistDetail | null> {
   const orderedItems = [...playlist.items].sort(comparePlaylistItems);
 
+  if (orderedItems.length === 0) {
+    return null;
+  }
+
   const signedResults = await Promise.allSettled(
     orderedItems.map((item) => signAudioUrl(item.tune.r2ObjectKey)),
   );
+
+  const failedTrackCount = signedResults.filter(
+    (result) => result.status === "rejected",
+  ).length;
+
+  if (failedTrackCount > 0) {
+    throw new PublicPlaylistSigningError(failedTrackCount);
+  }
 
   const tracks: SerializedPublicTrack[] = [];
 
   orderedItems.forEach((item, index) => {
     const result = signedResults[index];
 
-    if (!result || result.status !== "fulfilled") {
-      // Keep public responses safe when a signed URL cannot be created.
-      return;
-    }
+    if (!result || result.status !== "fulfilled") return;
 
     tracks.push({
       id: item.tune.id,

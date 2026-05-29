@@ -19,4 +19,14 @@ describe("buildTuneObjectKey", () => {
       /^audio\/tunes\/\d{4}\/\d{2}\/audio-[a-f0-9-]{36}\.wav$/,
     );
   });
+
+  it("uses a provided object id for retry-safe upload attempts", () => {
+    const objectId = "123e4567-e89b-12d3-a456-426614174000";
+
+    expect(buildTuneObjectKey("Sunday Chant.mp3", objectId)).toMatch(
+      new RegExp(
+        `^audio/tunes/\\d{4}/\\d{2}/sunday-chant-${objectId}\\.mp3$`,
+      ),
+    );
+  });
 });

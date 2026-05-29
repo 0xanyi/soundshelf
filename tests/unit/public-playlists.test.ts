@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  PublicPlaylistSigningError,
   serializePublicPlaylistDetail,
   serializePublicPlaylistSummary,
 } from "../../src/lib/playlists/public";
@@ -84,7 +85,7 @@ describe("serializePublicPlaylistDetail", () => {
     expect(JSON.stringify(playlist)).not.toContain("r2ObjectKey");
   });
 
-  it("omits tracks whose signed urls cannot be created and returns null when none remain", async () => {
+  it("throws when signed urls cannot be created", async () => {
     const playlist = {
       id: "playlist_1",
       title: "Evening",
@@ -109,6 +110,6 @@ describe("serializePublicPlaylistDetail", () => {
       serializePublicPlaylistDetail(playlist, async () => {
         throw new Error("R2 unavailable");
       }),
-    ).resolves.toBeNull();
+    ).rejects.toBeInstanceOf(PublicPlaylistSigningError);
   });
 });

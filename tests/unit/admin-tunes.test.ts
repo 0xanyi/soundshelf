@@ -210,7 +210,8 @@ describe("getTuneDeleteStorageCleanupWarning", () => {
   it("returns a safe response body for post-delete storage cleanup failures", () => {
     expect(getTuneDeleteStorageCleanupWarning()).toEqual({
       warning:
-        "Tune deleted, but the audio file could not be removed from storage. Please retry cleanup or check R2 configuration.",
+        "Tune deleted, but the audio file could not be removed from storage. Please check R2 configuration and remove the object manually.",
     });
   });
 });
+

@@ -1,3 +1,5 @@
+import type { PrismaClient } from "@prisma/client";
+
 import { db } from "@/lib/db";
 import {
   enforceSameOrigin,
@@ -11,6 +13,11 @@ import { parseTunePlaylistsSyncPayload } from "@/lib/tunes/admin";
 export const runtime = "nodejs";
 
 const MAX_SYNC_ATTEMPTS = 3;
+
+type TransactionClient = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$use" | "$extends"
+>;
 
 type TunePlaylistsRouteContext = {
   params: Promise<{
@@ -98,12 +105,15 @@ export async function PUT(
   });
 
   return Response.json({
-    playlists: updated.map((item) => ({
+    playlists: (updated as TunePlaylistRow[]).map((item) => ({
       id: item.playlist.id,
       title: item.playlist.title,
     })),
   });
 }
+
+type TunePlaylistRow = { playlist: { id: string; title: string } };
+type CurrentPlaylistMembership = { playlistId: string };
 
 async function syncTunePlaylists(
   tuneId: string,
@@ -111,12 +121,14 @@ async function syncTunePlaylists(
 ): Promise<{ added: number; removed: number }> {
   for (let attempt = 1; attempt <= MAX_SYNC_ATTEMPTS; attempt += 1) {
     try {
-      return await db.$transaction(async (tx) => {
+      return await db.$transaction(async (tx: TransactionClient) => {
         const current = await tx.playlistItem.findMany({
           where: { tuneId },
           select: { playlistId: true },
         });
-        const currentIds = new Set(current.map((item) => item.playlistId));
+        const currentIds = new Set(
+          (current as CurrentPlaylistMembership[]).map((item) => item.playlistId),
+        );
         const desiredIds = new Set(desired);
 
         const toRemove = [...currentIds].filter((id) => !desiredIds.has(id));

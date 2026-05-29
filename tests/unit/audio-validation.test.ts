@@ -33,11 +33,13 @@ describe("getMaxAudioUploadBytes", () => {
   });
 
   it.each(["", "not-a-number", "Infinity", "0", "-1"])(
-    "falls back to 50 MiB when MAX_AUDIO_UPLOAD_BYTES is invalid: %s",
+    "throws when MAX_AUDIO_UPLOAD_BYTES is invalid: %s",
     (value) => {
       process.env.MAX_AUDIO_UPLOAD_BYTES = value;
 
-      expect(getMaxAudioUploadBytes()).toBe(DEFAULT_MAX_AUDIO_UPLOAD_BYTES);
+      expect(() => getMaxAudioUploadBytes()).toThrow(
+        "MAX_AUDIO_UPLOAD_BYTES must be a positive whole number of bytes.",
+      );
     },
   );
 });
