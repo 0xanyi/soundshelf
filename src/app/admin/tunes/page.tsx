@@ -2,6 +2,7 @@ import { TuneManagementTable } from "@/components/admin/tune-management-table";
 import { TuneUploadForm } from "@/components/admin/tune-upload-form";
 import { db } from "@/lib/db";
 import { serializeAdminTune } from "@/lib/tunes/admin";
+import { getMaxAudioUploadBytes } from "@/lib/validation/audio";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ export default async function AdminTunesPage() {
         </p>
       </header>
 
-      <TuneUploadForm />
+      <TuneUploadForm maxUploadBytes={getMaxAudioUploadBytes()} />
 
       <div className="space-y-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">

@@ -6,8 +6,13 @@ import { type FormEvent, useRef, useState } from "react";
 
 import { readAudioDuration } from "@/lib/audio-duration";
 import { formatBytes } from "@/lib/format";
+import { validateAudioFileMetadata } from "@/lib/validation/audio";
 
-export function TuneUploadForm() {
+type TuneUploadFormProps = {
+  maxUploadBytes: number;
+};
+
+export function TuneUploadForm({ maxUploadBytes }: TuneUploadFormProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadAttemptIdRef = useRef(crypto.randomUUID());
@@ -18,11 +23,41 @@ export function TuneUploadForm() {
     text: string;
   } | null>(null);
 
+  const maxUploadLabel = formatBytes(maxUploadBytes);
+  const selectedFileValidation = selectedFile
+    ? validateAudioFileMetadata(
+        {
+          type: selectedFile.type,
+          size: selectedFile.size,
+          name: selectedFile.name,
+        },
+        { maxBytes: maxUploadBytes },
+      )
+    : null;
+  const canUpload =
+    selectedFile !== null &&
+    selectedFileValidation?.valid === true &&
+    !isUploading;
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!selectedFile) {
       setMessage({ type: "error", text: "Choose an audio file to upload." });
+      return;
+    }
+
+    const validation = validateAudioFileMetadata(
+      {
+        type: selectedFile.type,
+        size: selectedFile.size,
+        name: selectedFile.name,
+      },
+      { maxBytes: maxUploadBytes },
+    );
+
+    if (!validation.valid) {
+      setMessage({ type: "error", text: validation.message });
       return;
     }
 
@@ -75,6 +110,34 @@ export function TuneUploadForm() {
     }
   }
 
+  function handleFileChange(file: File | null) {
+    setSelectedFile(file);
+    uploadAttemptIdRef.current = crypto.randomUUID();
+
+    if (!file) {
+      setMessage(null);
+      return;
+    }
+
+    const validation = validateAudioFileMetadata(
+      {
+        type: file.type,
+        size: file.size,
+        name: file.name,
+      },
+      { maxBytes: maxUploadBytes },
+    );
+
+    setMessage(
+      validation.valid
+        ? null
+        : {
+            type: "error",
+            text: validation.message,
+          },
+    );
+  }
+
   return (
     <form className="panel-quiet p-5 sm:p-6" onSubmit={handleSubmit}>
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -102,7 +165,7 @@ export function TuneUploadForm() {
               <span className="block text-xs text-[hsl(var(--muted))]">
                 {selectedFile
                   ? formatBytes(selectedFile.size)
-                  : "MP3, WAV, M4A, OGG, FLAC"}
+                  : `MP3, WAV, M4A, OGG, FLAC · up to ${maxUploadLabel}`}
               </span>
             </span>
             <input
@@ -112,9 +175,7 @@ export function TuneUploadForm() {
               id="tune-file"
               name="file"
               onChange={(event) => {
-                setSelectedFile(event.target.files?.[0] ?? null);
-                uploadAttemptIdRef.current = crypto.randomUUID();
-                setMessage(null);
+                handleFileChange(event.target.files?.[0] ?? null);
               }}
               ref={fileInputRef}
               type="file"
@@ -123,7 +184,7 @@ export function TuneUploadForm() {
         </div>
         <button
           className="btn-primary"
-          disabled={isUploading || !selectedFile}
+          disabled={!canUpload}
           type="submit"
         >
           {isUploading ? (
@@ -169,4 +230,3 @@ async function readError(response: Response): Promise<string> {
     return "Upload failed.";
   }
 }
-

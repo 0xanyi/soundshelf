@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
+import { formatBytes } from "../../src/lib/format";
 import {
   ALLOWED_AUDIO_TYPES,
   getMaxAudioUploadBytes,
@@ -80,7 +81,7 @@ describe("validateAudioFileMetadata", () => {
     ).toEqual({
       valid: false,
       reason: "file_too_large",
-      message: `Audio files must be ${getMaxAudioUploadBytes()} bytes or smaller.`,
+      message: `Audio files must be ${formatBytes(getMaxAudioUploadBytes())} or smaller.`,
     });
   });
 
@@ -96,7 +97,7 @@ describe("validateAudioFileMetadata", () => {
     ).toEqual({
       valid: false,
       reason: "file_too_large",
-      message: "Audio files must be 1024 bytes or smaller.",
+      message: `Audio files must be ${formatBytes(1024)} or smaller.`,
     });
   });
 
@@ -167,7 +168,7 @@ describe("validateAudioContentLength", () => {
     expect(validateAudioContentLength(String(requestCapBytes + 1))).toEqual({
       valid: false,
       reason: "file_too_large",
-      message: `Audio upload requests must be ${requestCapBytes} bytes or smaller.`,
+      message: `Audio upload requests must be ${formatBytes(requestCapBytes)} or smaller.`,
     });
   });
 });
