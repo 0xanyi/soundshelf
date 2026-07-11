@@ -1,3 +1,5 @@
+import { formatBytes } from "@/lib/format";
+
 export const MAX_AUDIO_UPLOAD_BYTES = 50 * 1024 * 1024;
 const MULTIPART_UPLOAD_OVERHEAD_BYTES = 1024 * 1024;
 
@@ -94,7 +96,7 @@ export function validateAudioContentLength(
     return {
       valid: false,
       reason: "file_too_large",
-      message: `Audio upload requests must be ${maxAudioUploadRequestBytes} bytes or smaller.`,
+      message: `Audio upload requests must be ${formatBytes(maxAudioUploadRequestBytes)} or smaller.`,
     };
   }
 
@@ -103,6 +105,7 @@ export function validateAudioContentLength(
 
 export function validateAudioFileMetadata(
   file: AudioFileMetadata,
+  options: { maxBytes?: number } = {},
 ): AudioValidationResult {
   if (!isAllowedAudioType(file.type)) {
     return {
@@ -120,13 +123,13 @@ export function validateAudioFileMetadata(
     };
   }
 
-  const maxAudioUploadBytes = getMaxAudioUploadBytes();
+  const maxAudioUploadBytes = options.maxBytes ?? getMaxAudioUploadBytes();
 
   if (file.size > maxAudioUploadBytes) {
     return {
       valid: false,
       reason: "file_too_large",
-      message: `Audio files must be ${maxAudioUploadBytes} bytes or smaller.`,
+      message: `Audio files must be ${formatBytes(maxAudioUploadBytes)} or smaller.`,
     };
   }
 
