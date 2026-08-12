@@ -16,50 +16,50 @@
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1038.0",
-    "@aws-sdk/s3-request-presigner": "^3.1038.0",
-    "@prisma/adapter-pg": "^7.8.0",
-    "@prisma/client": "^7.8.0",
-    "@tanstack/react-query": "^5.100.6",
-    "better-auth": "^1.6.9",
+    "@aws-sdk/client-s3": "^3.1108.0",
+    "@aws-sdk/s3-request-presigner": "^3.1108.0",
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "@tanstack/react-query": "^5.101.4",
+    "better-auth": "^1.6.27",
     "clsx": "^2.1.1",
-    "lucide-react": "^1.14.0",
-    "next": "^16.2.4",
-    "pg": "^8.20.0",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5",
+    "lucide-react": "^1.31.0",
+    "next": "^16.3.0",
+    "pg": "^8.23.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "zod": "^4.3.6"
   },
   "overrides": {
-    "@hono/node-server": "^1.19.13",
-    "postcss": "^8.5.15"
+    "postcss": "^8.5.26"
   },
   "maintenanceNotes": {
-    "eslint": "TODO: bump to eslint@^10 once eslint-config-next ships an eslint-plugin-react bundle compatible with ESLint 10's rule context API (10.4.0 currently crashes with `contextOrFilename.getFilename is not a function`)."
+    "eslint": "Pinned to latest 9.x. eslint@10 still crashes eslint-plugin-react@7.37.5 (shipped by eslint-config-next@16.3) with `contextOrFilename.getFilename is not a function`. Re-evaluate when eslint-config-next ships a plugin bundle that supports ESLint 10's rule context API.",
+    "typescript": "Pinned to latest 6.x. typescript-eslint@8 (pulled by eslint-config-next@16.3) hard-errors on TS 7.0. Re-evaluate when typescript-eslint ships TS 7 support (typescript-eslint#10940).",
+    "@types/node": "Kept on the 25.x line to match the Node 24 runtime in Dockerfile. Do not jump to @types/node@26 unless the image moves to Node 26."
   },
   "overridesNote": {
-    "@hono/node-server": "Patches GHSA-92pp-h63x-v22m (middleware bypass) in prisma > @prisma/dev. Re-evaluate when prisma bumps @prisma/dev past hono 1.19.13: `npm ls @hono/node-server` should show >=1.19.13 without this override.",
-    "postcss": "Patches GHSA-qx2v-qp2m-jg93 (XSS via unescaped </style>) in next's nested postcss. Re-evaluate when next ships postcss >=8.5.10 transitively. Must stay in lockstep with the direct devDependency `postcss` range below (autoprefixer requires postcss as a peer dep), or npm throws EOVERRIDE."
+    "postcss": "Forces next/vite/tailwind onto postcss >=8.5.26 (source-map path traversal). Re-evaluate when next ships postcss >=8.5.26 transitively. Must stay in lockstep with the direct devDependency `postcss` range below (autoprefixer requires postcss as a peer dep), or npm throws EOVERRIDE."
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.2.4",
-    "@testing-library/jest-dom": "^6.9.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
-    "@types/node": "^25.6.0",
-    "@types/pg": "^8.20.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "autoprefixer": "^10.5.0",
+    "@types/node": "^25.9.5",
+    "@types/pg": "^8.21.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "autoprefixer": "^10.5.4",
     "dotenv": "^17.4.2",
-    "eslint": "^9.39.4",
-    "eslint-config-next": "^16.2.4",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.0",
     "jsdom": "^29.1.0",
-    "playwright": "^1.59.1",
-    "postcss": "^8.5.15",
-    "prisma": "^7.8.0",
-    "tailwindcss": "^4.2.4",
-    "tsx": "^4.21.0",
+    "playwright": "^1.62.1",
+    "postcss": "^8.5.26",
+    "prisma": "^7.9.1",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.12",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.10"
   }
 }
