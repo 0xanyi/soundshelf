@@ -1,5 +1,3 @@
-import type { PrismaClient } from "@prisma/client";
-
 import { db } from "@/lib/db";
 import {
   enforceSameOrigin,
@@ -9,18 +7,9 @@ import {
   requireAdminSession,
 } from "@/lib/http/errors";
 import { parseBulkAddTunesPayload } from "@/lib/tunes/admin";
+import { bulkAdd } from "@/lib/playlists/membership";
 
 export const runtime = "nodejs";
-
-// Concurrent admin edits can race on the (playlistId, position) unique
-// constraint when two requests pick the same "next" position. Retrying with a
-// fresh transaction is cheap and bounded.
-const MAX_BULK_ADD_ATTEMPTS = 3;
-
-type TransactionClient = Omit<
-  PrismaClient,
-  "$connect" | "$disconnect" | "$on" | "$use" | "$extends"
->;
 
 export async function POST(request: Request): Promise<Response> {
   const csrf = await enforceSameOrigin(request);
@@ -87,7 +76,20 @@ export async function POST(request: Request): Promise<Response> {
   let skipped = 0;
 
   for (const playlistId of playlistIds) {
-    const result = await addTunesToPlaylist(playlistId, tuneIds);
+    const result = await bulkAdd(db, playlistId, tuneIds);
+
+    if (result.status === "playlist-not-found") {
+      return jsonError("One or more playlists were not found.", 404);
+    }
+
+    if (result.status === "tune-not-found") {
+      return jsonError("One or more tunes were not found.", 404);
+    }
+
+    if (result.status === "conflict") {
+      return jsonError("Playlist order changed. Please try again.", 409);
+    }
+
     added += result.added;
     skipped += result.skipped;
   }
@@ -100,88 +102,4 @@ export async function POST(request: Request): Promise<Response> {
   });
 
   return Response.json({ ok: true, added, skipped });
-}
-
-async function addTunesToPlaylist(
-  playlistId: string,
-  tuneIds: string[],
-): Promise<{ added: number; skipped: number }> {
-  for (let attempt = 1; attempt <= MAX_BULK_ADD_ATTEMPTS; attempt += 1) {
-    try {
-      return await db.$transaction(async (tx: TransactionClient) => {
-        const last = await tx.playlistItem.findFirst({
-          where: { playlistId },
-          orderBy: { position: "desc" },
-          select: { position: true },
-        });
-
-        const existing = await tx.playlistItem.findMany({
-          where: { playlistId, tuneId: { in: tuneIds } },
-          select: { tuneId: true },
-        });
-        const existingTuneIds = new Set(
-          (existing as Array<{ tuneId: string }>).map((item) => item.tuneId),
-        );
-
-        const toAdd = tuneIds.filter((id) => !existingTuneIds.has(id));
-
-        if (toAdd.length === 0) {
-          return { added: 0, skipped: tuneIds.length };
-        }
-
-        const startPosition = last ? last.position + 1 : 0;
-
-        // createMany is a single round trip and a single transactional check
-        // against the (playlistId, position) unique index, so concurrent
-        // additions surface as a P2002 we can retry.
-        await tx.playlistItem.createMany({
-          data: toAdd.map((tuneId, index) => ({
-            playlistId,
-            tuneId,
-            position: startPosition + index,
-          })),
-        });
-
-        return { added: toAdd.length, skipped: existingTuneIds.size };
-      });
-    } catch (error) {
-      if (isPositionConflict(error) && attempt < MAX_BULK_ADD_ATTEMPTS) {
-        continue;
-      }
-
-      throw error;
-    }
-  }
-
-  // Defensive: the loop either returns or throws.
-  throw new Error("Failed to add tunes to playlist after retries.");
-}
-
-function isPositionConflict(error: unknown): boolean {
-  if (
-    typeof error !== "object" ||
-    error === null ||
-    !("code" in error) ||
-    (error as { code?: unknown }).code !== "P2002"
-  ) {
-    return false;
-  }
-
-  const meta = (error as { meta?: unknown }).meta;
-
-  if (!meta || typeof meta !== "object") {
-    return false;
-  }
-
-  const target = (meta as { target?: unknown }).target;
-  const tokens =
-    Array.isArray(target) && target.every((value) => typeof value === "string")
-      ? (target as string[])
-      : typeof target === "string"
-        ? [target]
-        : [];
-
-  return tokens.some(
-    (value) => value.includes("position") || value.includes("playlistId"),
-  );
 }
