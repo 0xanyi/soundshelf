@@ -1,5 +1,3 @@
-import { Prisma, type PrismaClient } from "@prisma/client";
-
 import { db } from "@/lib/db";
 import {
   enforceSameOrigin,
@@ -9,13 +7,10 @@ import {
   requireAdminSession,
 } from "@/lib/http/errors";
 import {
-  buildMovedPlaylistItemPositions,
-  buildNormalizedPlaylistItemPositions,
-  getPlaylistItemCreatePrismaErrorResponse,
-  isPlaylistItemPositionConflict,
   parsePlaylistReorderPayload,
   serializeAdminPlaylistItem,
 } from "@/lib/playlists/admin";
+import { append, move, remove } from "@/lib/playlists/membership";
 
 export const runtime = "nodejs";
 
@@ -24,14 +19,6 @@ type PlaylistItemsRouteContext = {
     playlistId: string;
   }>;
 };
-
-const maxAddItemAttempts = 3;
-const maxPositionUpdateAttempts = 3;
-
-type TransactionClient = Omit<
-  PrismaClient,
-  "$connect" | "$disconnect" | "$on" | "$use" | "$extends"
->;
 
 export async function POST(
   request: Request,
@@ -72,80 +59,51 @@ export async function POST(
   if (!isValidCuid(playlistId)) {
     return jsonError("Invalid playlist id.", 400);
   }
-  const [playlist, tune] = await Promise.all([
-    db.playlist.findUnique({
-      where: { id: playlistId },
-      select: { id: true },
-    }),
-    db.tune.findUnique({
-      where: { id: tuneId },
-      select: { id: true },
-    }),
-  ]);
 
-  if (!playlist) {
+  const result = await append(db, playlistId, tuneId);
+
+  if (result.status === "playlist-not-found") {
     return jsonError("Playlist not found.", 404);
   }
 
-  if (!tune) {
+  if (result.status === "tune-not-found") {
     return jsonError("Tune not found.", 404);
   }
 
-  for (let attempt = 1; attempt <= maxAddItemAttempts; attempt += 1) {
-    try {
-      const item = await db.$transaction(async (tx: TransactionClient) => {
-        const lastItem = await tx.playlistItem.findFirst({
-          where: { playlistId },
-          orderBy: { position: "desc" },
-          select: { position: true },
-        });
-
-        return tx.playlistItem.create({
-          data: {
-            playlistId,
-            tuneId,
-            position: lastItem ? lastItem.position + 1 : 0,
-          },
-          include: {
-            tune: {
-              select: {
-                id: true,
-                title: true,
-                durationSeconds: true,
-              },
-            },
-          },
-        });
-      });
-
-      await recordAudit({
-        actorId: session.userId,
-        action: "playlist.item.create",
-        resource: "playlist",
-        resourceId: playlistId,
-        metadata: { itemId: item.id, tuneId },
-      });
-
-      return Response.json(serializeAdminPlaylistItem(item), { status: 201 });
-    } catch (error) {
-      const createErrorResponse = getPlaylistItemCreatePrismaErrorResponse(error);
-
-      if (
-        isPlaylistItemPositionConflict(error) &&
-        attempt < maxAddItemAttempts
-      ) {
-        continue;
-      }
-
-      if (createErrorResponse) {
-        return jsonError(createErrorResponse.message, createErrorResponse.status);
-      }
-
-      throw error;
-    }
+  if (result.status === "already-member") {
+    return jsonError("Tune is already in this playlist.", 409);
   }
 
-  return jsonError("Playlist item position changed. Please try again.", 409);
+  if (result.status === "conflict") {
+    return jsonError("Playlist item position changed. Please try again.", 409);
+  }
+
+  const item = await db.playlistItem.findUnique({
+    where: { id: result.item.id },
+    include: {
+      tune: {
+        select: {
+          id: true,
+          title: true,
+          durationSeconds: true,
+        },
+      },
+    },
+  });
+
+  if (!item) {
+    return jsonError("Playlist item not found.", 404);
+  }
+
+  await recordAudit({
+    actorId: session.userId,
+    action: "playlist.item.create",
+    resource: "playlist",
+    resourceId: playlistId,
+    metadata: { itemId: result.item.id, tuneId },
+  });
+
+  return Response.json(serializeAdminPlaylistItem(item), { status: 201 });
 }
 
 export async function PATCH(
@@ -181,25 +139,24 @@ export async function PATCH(
     return jsonError("Invalid playlist id.", 400);
   }
 
-  const reorderResult = await movePlaylistItemWithRetry(
+  const result = await move(
+    db,
     playlistId,
     validation.data.itemId,
     validation.data.targetIndex,
   );
 
-  if (reorderResult.status === "playlist-not-found") {
+  if (result.status === "playlist-not-found") {
     return jsonError("Playlist not found.", 404);
   }
 
-  if (reorderResult.status === "item-not-found") {
+  if (result.status === "item-not-found") {
     return jsonError("Playlist item not found.", 404);
   }
 
-  if (reorderResult.status === "conflict") {
+  if (result.status === "conflict") {
     return jsonError("Playlist order changed. Please try again.", 409);
   }
-
-  const nextItems = reorderResult.items;
 
   await recordAudit({
     actorId: session.userId,
@@ -212,7 +169,7 @@ export async function PATCH(
     },
   });
 
-  return Response.json({ items: nextItems });
+  return Response.json({ items: result.items });
 }
 
 export async function DELETE(
@@ -255,21 +212,19 @@ export async function DELETE(
     return jsonError("Invalid playlist id.", 400);
   }
 
-  const deleteResult = await deletePlaylistItemWithRetry(playlistId, itemId);
+  const result = await remove(db, playlistId, itemId);
 
-  if (deleteResult.status === "playlist-not-found") {
+  if (result.status === "playlist-not-found") {
     return jsonError("Playlist not found.", 404);
   }
 
-  if (deleteResult.status === "item-not-found") {
+  if (result.status === "item-not-found") {
     return jsonError("Playlist item not found.", 404);
   }
 
-  if (deleteResult.status === "conflict") {
+  if (result.status === "conflict") {
     return jsonError("Playlist order changed. Please try again.", 409);
   }
-
-  const nextItems = deleteResult.items;
 
   await recordAudit({
     actorId: session.userId,
@@ -279,174 +234,7 @@ export async function DELETE(
     metadata: { itemId },
   });
 
-  return Response.json({ items: nextItems });
-}
-
-type PlaylistPositionResult =
-  | { status: "ok"; items: Array<{ id: string; position: number }> }
-  | { status: "playlist-not-found" }
-  | { status: "item-not-found" }
-  | { status: "conflict" };
-
-type PlaylistPositionItem = { id: string; position: number };
-
-async function movePlaylistItemWithRetry(
-  playlistId: string,
-  itemId: string,
-  targetIndex: number,
-): Promise<PlaylistPositionResult> {
-  for (let attempt = 1; attempt <= maxPositionUpdateAttempts; attempt += 1) {
-    try {
-      return await db.$transaction(
-        async (tx: TransactionClient) => {
-          const playlist = await tx.playlist.findUnique({
-            where: { id: playlistId },
-            select: {
-              id: true,
-              items: {
-                orderBy: [{ position: "asc" }, { createdAt: "asc" }],
-                select: { id: true, position: true },
-              },
-            },
-          });
-
-          if (!playlist) {
-            return { status: "playlist-not-found" } as const;
-          }
-
-          const currentItems = playlist.items as PlaylistPositionItem[];
-
-          if (!currentItems.some((item) => item.id === itemId)) {
-            return { status: "item-not-found" } as const;
-          }
-
-          const items = buildMovedPlaylistItemPositions(
-            currentItems,
-            itemId,
-            targetIndex,
-          );
-
-          await updatePlaylistItemPositions(tx, items);
-
-          return { status: "ok", items } as const;
-        },
-        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-      );
-    } catch (error) {
-      if (isRetryablePlaylistPositionError(error) && attempt < maxPositionUpdateAttempts) {
-        continue;
-      }
-
-      if (isRetryablePlaylistPositionError(error)) {
-        return { status: "conflict" };
-      }
-
-      throw error;
-    }
-  }
-
-  return { status: "conflict" };
-}
-
-async function deletePlaylistItemWithRetry(
-  playlistId: string,
-  itemId: string,
-): Promise<PlaylistPositionResult> {
-  for (let attempt = 1; attempt <= maxPositionUpdateAttempts; attempt += 1) {
-    try {
-      return await db.$transaction(
-        async (tx: TransactionClient) => {
-          const playlist = await tx.playlist.findUnique({
-            where: { id: playlistId },
-            select: {
-              id: true,
-              items: {
-                orderBy: [{ position: "asc" }, { createdAt: "asc" }],
-                select: { id: true, position: true },
-              },
-            },
-          });
-
-          if (!playlist) {
-            return { status: "playlist-not-found" } as const;
-          }
-
-          const currentItems = playlist.items as PlaylistPositionItem[];
-
-          if (!currentItems.some((item) => item.id === itemId)) {
-            return { status: "item-not-found" } as const;
-          }
-
-          await tx.playlistItem.delete({
-            where: { id: itemId },
-          });
-
-          const items = buildNormalizedPlaylistItemPositions(
-            currentItems.filter((item) => item.id !== itemId),
-          );
-
-          await updatePlaylistItemPositions(tx, items);
-
-          return { status: "ok", items } as const;
-        },
-        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-      );
-    } catch (error) {
-      if (isRetryablePlaylistPositionError(error) && attempt < maxPositionUpdateAttempts) {
-        continue;
-      }
-
-      if (isRetryablePlaylistPositionError(error)) {
-        return { status: "conflict" };
-      }
-
-      throw error;
-    }
-  }
-
-  return { status: "conflict" };
-}
-
-type PlaylistItemPositionClient = Pick<TransactionClient, "playlistItem">;
-
-async function updatePlaylistItemPositions(
-  client: PlaylistItemPositionClient,
-  items: Array<{ id: string; position: number }>,
-): Promise<void> {
-  if (items.length === 0) {
-    return;
-  }
-
-  await Promise.all([
-    ...items.map((item, index) =>
-      client.playlistItem.update({
-        where: { id: item.id },
-        data: { position: -(index + 1) },
-      }),
-    ),
-  ]);
-
-  await Promise.all([
-    ...items.map((item) =>
-      client.playlistItem.update({
-        where: { id: item.id },
-        data: { position: item.position },
-      }),
-    ),
-  ]);
-}
-
-function isRetryablePlaylistPositionError(error: unknown): boolean {
-  return isPlaylistItemPositionConflict(error) || isPrismaTransactionConflict(error);
-}
-
-function isPrismaTransactionConflict(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: unknown }).code === "P2034"
-  );
+  return Response.json({ items: result.items });
 }
 
 function parseStringField(payload: object, fieldName: string): string {

@@ -1,7 +1,5 @@
 import type { PlaylistVisibility } from "@prisma/client";
 
-import { moveItem, normalizePositions, type PositionedItem } from "../playlist/order";
-
 export type AdminPlaylistRecord = {
   id: string;
   title: string;
@@ -131,20 +129,6 @@ export function parsePlaylistReorderPayload(payload: unknown): PlaylistReorderRe
       targetIndex: input.targetIndex as number,
     },
   };
-}
-
-export function buildMovedPlaylistItemPositions<TItem extends PositionedItem>(
-  items: readonly TItem[],
-  itemId: string,
-  targetIndex: number,
-): TItem[] {
-  return moveItem(items, itemId, targetIndex);
-}
-
-export function buildNormalizedPlaylistItemPositions<TItem extends PositionedItem>(
-  items: readonly TItem[],
-): TItem[] {
-  return normalizePositions(items);
 }
 
 export function getPlaylistItemCreatePrismaErrorResponse(

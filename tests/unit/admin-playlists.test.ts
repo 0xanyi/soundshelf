@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  buildMovedPlaylistItemPositions,
   getPlaylistItemCreatePrismaErrorResponse,
   isPlaylistItemPositionConflict,
   parsePlaylistMutationPayload,
@@ -150,41 +149,5 @@ describe("parsePlaylistReorderPayload", () => {
       valid: false,
       message: "Target index must be an integer.",
     });
-  });
-});
-
-describe("buildMovedPlaylistItemPositions", () => {
-  it("normalizes existing positions and moves an item to the requested index", () => {
-    expect(
-      buildMovedPlaylistItemPositions(
-        [
-          { id: "a", position: 20 },
-          { id: "b", position: 10 },
-          { id: "c", position: 10 },
-        ],
-        "a",
-        1,
-      ),
-    ).toEqual([
-      { id: "b", position: 0 },
-      { id: "a", position: 1 },
-      { id: "c", position: 2 },
-    ]);
-  });
-
-  it("returns normalized positions when the item is missing", () => {
-    expect(
-      buildMovedPlaylistItemPositions(
-        [
-          { id: "a", position: 3 },
-          { id: "b", position: 1 },
-        ],
-        "missing",
-        0,
-      ),
-    ).toEqual([
-      { id: "b", position: 0 },
-      { id: "a", position: 1 },
-    ]);
   });
 });
