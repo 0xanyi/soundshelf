@@ -1,8 +1,13 @@
+import "dotenv/config";
+
 import { defineConfig, devices } from "playwright/test";
+
+import { e2eDatabaseUrl } from "./tests/e2e/auth-fixtures";
 
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
+  globalSetup: "./tests/e2e/global-setup.ts",
   reporter: "list",
   use: {
     baseURL: "http://localhost:3000",
@@ -13,12 +18,10 @@ export default defineConfig({
     env: {
       BETTER_AUTH_SECRET: "dev-secret-for-e2e-with-32-characters",
       BETTER_AUTH_URL: "http://localhost:3000",
-      // Port 5434 matches the host mapping in docker-compose.override.yml.
-      // The container listens on 5432, so anything reading this from the host
-      // must use 5434 or it will reach a different database entirely.
-      DATABASE_URL:
-        process.env.DATABASE_URL ??
-        "postgresql://postgres:postgres@localhost:5434/soundshelf",
+      // The app under test is pointed at the seeded `soundshelf_e2e` database,
+      // not the developer's `soundshelf`, so signing in during a test run
+      // cannot write session rows into development data.
+      DATABASE_URL: e2eDatabaseUrl(),
       MAX_AUDIO_UPLOAD_BYTES: "52428800",
       NEXT_PUBLIC_APP_URL: "http://localhost:3000",
       NEXT_TELEMETRY_DISABLED: "1",
