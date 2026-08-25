@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { displayTuneTitle } from "@/lib/format";
+import { tuneTitleFromFileName } from "@/lib/format";
 import {
   enforceSameOrigin,
   jsonError,
@@ -95,7 +95,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const tune = await db.tune.create({
       data: {
-        title: displayTuneTitle(uploadedFile.name),
+        title: tuneTitleFromFileName(uploadedFile.name),
         durationSeconds,
         mimeType: uploadedFile.type,
         fileSizeBytes: BigInt(uploadedFile.size),

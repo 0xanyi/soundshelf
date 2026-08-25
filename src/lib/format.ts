@@ -103,7 +103,7 @@ export function cumulativeStarts(durations: number[]): number[] {
   return starts;
 }
 
-const AUDIO_EXTENSION_PATTERN = /\.(?:aac|flac|m4a|mp3|ogg|wav|webm)$/i;
+const AUDIO_EXTENSION_PATTERN = /\.(?:aac|flac|m4a|mp3|mp4|ogg|wav|webm)$/i;
 
 /**
  * Listener-facing Tune title. Upload often stores the filename stem; this
@@ -124,4 +124,14 @@ export function displayTuneTitle(title: string): string {
 
   const humanized = stem.replace(/[_-]+/g, " ").trim();
   return humanized || "Untitled tune";
+}
+
+/**
+ * Canonical title for a newly uploaded file. Strips any final extension,
+ * then humanizes the stem. Listener display keeps a closed audio-extension
+ * list so a curator title like "v1.2" is not rewritten.
+ */
+export function tuneTitleFromFileName(fileName: string): string {
+  const stem = fileName.replace(/\.[^/.]+$/, "").trim();
+  return displayTuneTitle(stem);
 }

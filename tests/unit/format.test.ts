@@ -4,6 +4,7 @@ import {
   displayTuneTitle,
   formatDate,
   formatTotalDuration,
+  tuneTitleFromFileName,
 } from "../../src/lib/format";
 
 describe("formatDate", () => {
@@ -43,5 +44,14 @@ describe("displayTuneTitle", () => {
   it("falls back when the stem is empty", () => {
     expect(displayTuneTitle("   ")).toBe("Untitled tune");
     expect(displayTuneTitle(".mp3")).toBe("Untitled tune");
+  });
+});
+
+describe("tuneTitleFromFileName", () => {
+  it("strips any final extension before humanizing", () => {
+    expect(tuneTitleFromFileName("sermon.mp4")).toBe("sermon");
+    expect(tuneTitleFromFileName("1hr-052601.mp3")).toBe("1hr 052601");
+    expect(tuneTitleFromFileName("My Song.wav")).toBe("My Song");
+    expect(tuneTitleFromFileName(".mp3")).toBe("Untitled tune");
   });
 });
