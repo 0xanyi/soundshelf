@@ -46,6 +46,12 @@ model Account {
   id                    String    @id
   accountId             String
   providerId            String
+  // Better Auth 1.7+ resolves a credential account by (providerId, issuer,
+  // accountId). For providers with no issuer of their own it synthesizes one:
+  // "local:<providerId>" for local methods and "local:oauth:<providerId>" for
+  // OAuth, so an OAuth provider id can never collide with a local one.
+  // Sign-in returns "Invalid email or password" when this does not match.
+  issuer                String
   userId                String
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
@@ -58,7 +64,7 @@ model Account {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  @@unique([providerId, accountId])
+  @@unique([issuer, accountId])
   @@index([userId])
 }
 
