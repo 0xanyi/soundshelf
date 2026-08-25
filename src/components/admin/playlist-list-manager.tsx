@@ -172,8 +172,7 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
             <p className="text-lg font-medium text-ink">No playlists yet</p>
             <p className="mx-auto mt-2 max-w-sm text-sm text-ink-2">
               Create one above, then add tunes to it. A playlist stays hidden
-              from listeners until you publish it and it holds at least one
-              tune.
+              from listeners until it is public and holds at least one tune.
             </p>
           </div>
         ) : (
@@ -205,7 +204,7 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
                 {playlists.map((playlist) => {
                   const isPending = pendingId === playlist.id;
                   const isPublic = playlist.visibility === "public";
-                  // A published playlist with nothing on it is still invisible
+                  // A public playlist with nothing on it is still invisible
                   // to listeners; say so rather than implying it is live.
                   const isLive = isPublic && playlist.itemCount > 0;
 
