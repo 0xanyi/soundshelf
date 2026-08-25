@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, EyeOff, ExternalLink, ListMusic, Plus, Trash2 } from "lucide-react";
+import { ArrowUpRight, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,10 @@ import { useState } from "react";
 
 import type { SerializedAdminPlaylist } from "@/lib/playlists/admin";
 import { formatDate } from "@/lib/format";
+import { getShelfmark } from "@/lib/shelfmark";
+import { getMood } from "@/lib/mood";
 import { readError } from "@/lib/http/client";
+import type { CSSProperties } from "react";
 
 type PlaylistListManagerProps = {
   playlists: SerializedAdminPlaylist[];
@@ -115,18 +118,12 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <form
-        className="panel-quiet p-5 sm:p-6"
-        onSubmit={(event) => void createPlaylist(event)}
-      >
-        <p className="kicker">New playlist</p>
-        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
-          <div className="space-y-2">
-            <label
-              className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
-              htmlFor="playlist-title"
-            >
+    <div>
+      <form onSubmit={(event) => void createPlaylist(event)}>
+        <p className="label">New playlist</p>
+        <div className="mt-1 grid gap-x-6 gap-y-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+          <div>
+            <label className="sr-only" htmlFor="playlist-title">
               Title
             </label>
             <input
@@ -134,16 +131,13 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
               disabled={isCreating}
               id="playlist-title"
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="Morning calm"
+              placeholder="Title"
               required
               value={title}
             />
           </div>
-          <div className="space-y-2">
-            <label
-              className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
-              htmlFor="playlist-description"
-            >
+          <div>
+            <label className="sr-only" htmlFor="playlist-description">
               Description
             </label>
             <input
@@ -151,120 +145,161 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
               disabled={isCreating}
               id="playlist-description"
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Optional"
+              placeholder="Description (optional)"
               value={description}
             />
           </div>
-          <button className="btn-primary" disabled={isCreating} type="submit">
-            <Plus aria-hidden="true" size={16} />
+          <button
+            className="control control-solid mb-1"
+            disabled={isCreating}
+            type="submit"
+          >
+            <Plus aria-hidden="true" size={14} />
             Create
           </button>
         </div>
       </form>
 
       {message ? (
-        <p className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface)/0.7)] px-3 py-2 text-sm text-[hsl(var(--muted))]">
+        <p className="pt-4 text-sm text-ink-2" role="status">
           {message}
         </p>
       ) : null}
 
-      {playlists.length === 0 ? (
-        <div className="panel-quiet grid place-items-center gap-3 p-10 text-center">
-          <span className="grid size-12 place-items-center rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--surface-2)/0.7)] text-[hsl(var(--accent))]">
-            <ListMusic size={20} aria-hidden="true" />
-          </span>
-          <div>
-            <h3 className="display-heading text-lg font-semibold">
-              No playlists yet
-            </h3>
-            <p className="mt-1 text-sm text-[hsl(var(--muted))]">
-              Create a playlist to start grouping songs.
+      <div className="mt-10">
+        {playlists.length === 0 ? (
+          <div className="rule-t rule-b py-14 text-center">
+            <p className="text-lg font-medium text-ink">No playlists yet</p>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-ink-2">
+              Create one above, then add tunes to it. A playlist stays hidden
+              from listeners until it is public and holds at least one tune.
             </p>
           </div>
-        </div>
-      ) : (
-        <div className="panel-quiet overflow-hidden">
+        ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-[hsl(var(--border)/0.5)] text-left text-sm">
-              <thead className="text-[11px] uppercase tracking-[0.18em] text-[hsl(var(--muted))]">
-                <tr className="bg-[hsl(var(--surface-2)/0.4)]">
-                  <th className="px-5 py-3 font-semibold">Playlist</th>
-                  <th className="px-5 py-3 font-semibold">Visibility</th>
-                  <th className="px-5 py-3 font-semibold">Songs</th>
-                  <th className="px-5 py-3 font-semibold">Created</th>
-                  <th className="px-5 py-3 font-semibold">Actions</th>
+            <table className="w-full min-w-[48rem] border-collapse text-left">
+              <thead>
+                <tr className="rule-b">
+                  <th className="label w-28 pb-2 pr-4 align-bottom font-medium">
+                    Shelfmark
+                  </th>
+                  <th className="label pb-2 pr-4 align-bottom font-medium">
+                    Playlist
+                  </th>
+                  <th className="label pb-2 pr-4 align-bottom font-medium">
+                    Visibility
+                  </th>
+                  <th className="label pb-2 pr-4 align-bottom text-right font-medium">
+                    Tunes
+                  </th>
+                  <th className="label pb-2 pr-4 align-bottom font-medium">
+                    Created
+                  </th>
+                  <th className="label pb-2 align-bottom text-right font-medium">
+                    Actions
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[hsl(var(--border)/0.4)]">
+              <tbody>
                 {playlists.map((playlist) => {
                   const isPending = pendingId === playlist.id;
+                  const isPublic = playlist.visibility === "public";
+                  // A public playlist with nothing on it is still invisible
+                  // to listeners; say so rather than implying it is live.
+                  const isLive = isPublic && playlist.itemCount > 0;
 
                   return (
-                    <tr className="align-top" key={playlist.id}>
-                      <td className="min-w-72 px-5 py-4">
-                        <div className="font-medium">{playlist.title}</div>
+                    <tr
+                      className="rule-b align-middle"
+                      key={playlist.id}
+                      style={getMood(playlist.id).cssVars as CSSProperties}
+                    >
+                      <td className="py-3 pr-4">
+                        <span className="flex items-center gap-2">
+                          <span className="shelf-tab" aria-hidden="true" />
+                          <span className="shelfmark">
+                            {getShelfmark(playlist.id)}
+                          </span>
+                        </span>
+                      </td>
+
+                      <td className="min-w-64 py-3 pr-4">
+                        <Link
+                          className="text-base font-medium text-ink hover:text-mood-ink"
+                          href={`/admin/playlists/${playlist.id}` as Route}
+                        >
+                          {playlist.title}
+                        </Link>
                         {playlist.description ? (
-                          <div className="mt-1 max-w-md text-sm text-[hsl(var(--muted))]">
+                          <span className="mt-0.5 block max-w-prose text-sm text-ink-2">
                             {playlist.description}
-                          </div>
+                          </span>
                         ) : null}
                       </td>
-                      <td className="px-5 py-4">
-                        {playlist.visibility === "public" ? (
-                          <button
-                            aria-label={`Hide ${playlist.title} from listeners`}
-                            className="btn-ghost inline-flex items-center gap-2 px-3 py-1 text-xs"
-                            disabled={isPending}
-                            onClick={() =>
-                              void toggleVisibility(playlist.id, "hidden")
-                            }
-                            title="Hide playlist"
-                            type="button"
-                          >
+
+                      <td className="py-3 pr-4">
+                        <button
+                          aria-label={
+                            isPublic
+                              ? `Make ${playlist.title} hidden`
+                              : `Make ${playlist.title} public`
+                          }
+                          className="control -ml-2.5"
+                          disabled={isPending}
+                          onClick={() =>
+                            void toggleVisibility(
+                              playlist.id,
+                              isPublic ? "hidden" : "public",
+                            )
+                          }
+                          title={
+                            isPublic
+                              ? "Make playlist hidden"
+                              : "Make playlist public"
+                          }
+                          type="button"
+                        >
+                          {isPublic ? (
                             <Eye aria-hidden="true" size={14} />
-                            Public
-                          </button>
-                        ) : (
-                          <button
-                            aria-label={`Publish ${playlist.title}`}
-                            className="btn-ghost inline-flex items-center gap-2 px-3 py-1 text-xs"
-                            disabled={isPending}
-                            onClick={() =>
-                              void toggleVisibility(playlist.id, "public")
-                            }
-                            title="Publish playlist"
-                            type="button"
-                          >
+                          ) : (
                             <EyeOff aria-hidden="true" size={14} />
-                            Hidden
-                          </button>
-                        )}
+                          )}
+                          {isPublic ? "Public" : "Hidden"}
+                        </button>
+                        {isPublic && !isLive ? (
+                          <span className="block pl-0.5 text-xs text-ink-3">
+                            Empty, so still unlisted
+                          </span>
+                        ) : null}
                       </td>
-                      <td className="px-5 py-4">
-                        <span className="pill">{playlist.itemCount}</span>
+
+                      <td className="figure py-3 pr-4 text-right text-sm text-ink-2">
+                        {playlist.itemCount}
                       </td>
-                      <td className="min-w-36 px-5 py-4 text-xs text-[hsl(var(--muted))]">
+
+                      <td className="figure min-w-36 py-3 pr-4 text-xs text-ink-3">
                         {formatDate(playlist.createdAt)}
                       </td>
-                      <td className="px-5 py-4">
-                        <div className="flex gap-2">
+
+                      <td className="py-3">
+                        <div className="flex items-center justify-end gap-0.5">
                           <Link
                             aria-label={`Edit ${playlist.title}`}
-                            className="btn-ghost-icon"
+                            className="control control-icon"
                             href={`/admin/playlists/${playlist.id}` as Route}
                             title="Edit playlist"
                           >
-                            <ExternalLink aria-hidden="true" size={16} />
+                            <ArrowUpRight aria-hidden="true" size={15} />
                           </Link>
                           <button
                             aria-label={`Delete ${playlist.title}`}
-                            className="btn-danger-icon"
+                            className="control control-icon control-danger"
                             disabled={isPending}
                             onClick={() => void deletePlaylist(playlist.id)}
                             title="Delete playlist"
                             type="button"
                           >
-                            <Trash2 aria-hidden="true" size={16} />
+                            <Trash2 aria-hidden="true" size={15} />
                           </button>
                         </div>
                       </td>
@@ -274,10 +309,8 @@ export function PlaylistListManager({ playlists }: PlaylistListManagerProps) {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
-
-

@@ -97,11 +97,33 @@ describe("PlaylistBrowser", () => {
 
     render(<PlaylistBrowser initialPlaylistId="playlist-evening" />);
 
-    expect(await screen.findAllByText("Evening Track")).toHaveLength(1);
+    expect(
+      await screen.findByRole("heading", { name: "Evening Track" }),
+    ).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith(
       "/api/public/playlists/playlist-morning",
       expect.anything(),
     );
+    expect(
+      screen.queryByRole("button", { name: /morning/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not offer sharing when the shelf is empty", async () => {
+    vi.stubGlobal("fetch", (input: RequestInfo | URL) => {
+      if (input.toString() === "/api/public/playlists") {
+        return Promise.resolve(jsonResponse({ playlists: [] }));
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch: ${input}`));
+    });
+
+    render(<PlaylistBrowser />);
+
+    expect(await screen.findByText("The shelf is empty")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /share playlist/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("copies a link to the selected playlist", async () => {
@@ -228,9 +250,12 @@ describe("PlaylistBrowser", () => {
 
     render(<PlaylistBrowser />);
 
-    // The queue is closed by default, so the active track title appears
-    // only in the player display.
-    expect(await screen.findAllByText("Old Track")).toHaveLength(1);
+    // The selected playlist's register is open in the page and the transport
+    // names what is playing, so the active title is rendered in both places.
+    // Query the transport heading to pin the starting state precisely.
+    expect(
+      await screen.findByRole("heading", { name: "Old Track" }),
+    ).toBeInTheDocument();
 
     const eveningButtons = await screen.findAllByRole("button", {
       name: /evening/i,
@@ -310,7 +335,9 @@ describe("PlaylistBrowser", () => {
     });
     fireEvent.click(eveningButtons[0]);
 
-    expect(await screen.findAllByText("New Track")).toHaveLength(1);
+    expect(
+      await screen.findByRole("heading", { name: "New Track" }),
+    ).toBeInTheDocument();
 
     morningJson.resolve({
       id: "playlist-morning",
@@ -332,6 +359,8 @@ describe("PlaylistBrowser", () => {
     await waitFor(() => {
       expect(screen.queryByText("Old Track")).not.toBeInTheDocument();
     });
-    expect(screen.getAllByText("New Track")).toHaveLength(1);
+    expect(
+      screen.getByRole("heading", { name: "New Track" }),
+    ).toBeInTheDocument();
   });
 });

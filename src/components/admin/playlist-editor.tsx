@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowLeft, ArrowUp, ListMusic, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Plus, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
@@ -10,7 +10,12 @@ import type {
   SerializedAdminPlaylist,
   SerializedAdminPlaylistItem,
 } from "@/lib/playlists/admin";
-import { formatDuration } from "@/lib/format";
+import {
+  cumulativeStarts,
+  formatDuration,
+  formatTotalDuration,
+  safeDuration,
+} from "@/lib/format";
 import { readError } from "@/lib/http/client";
 
 type TuneOption = {
@@ -69,6 +74,11 @@ export function PlaylistEditor({
     return tunes.filter((tune) => !usedTuneIds.has(tune.id));
   }, [tunes, currentItems]);
 
+  const runningTimeSeconds = currentItems.reduce(
+    (total, item) => total + safeDuration(item.tune.durationSeconds),
+    0,
+  );
+
   async function savePlaylist(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPendingAction("playlist");
@@ -103,7 +113,7 @@ export function PlaylistEditor({
     event.preventDefault();
 
     if (!selectedTuneId) {
-      setMessage("Select a song to add.");
+      setMessage("Select a tune to add.");
       return;
     }
 
@@ -127,10 +137,10 @@ export function PlaylistEditor({
       const item = (await response.json()) as SerializedAdminPlaylistItem;
       updateCurrentItems((current) => [...current, item]);
       setSelectedTuneId("");
-      setMessage("Song added.");
+      setMessage("Tune added.");
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Song could not be added.");
+      setMessage(error instanceof Error ? error.message : "Tune could not be added.");
     } finally {
       setPendingAction(null);
     }
@@ -214,31 +224,33 @@ export function PlaylistEditor({
     }));
   }
 
+  const starts = cumulativeStarts(
+    currentItems.map((item) => item.tune.durationSeconds),
+  );
+  const rows = currentItems.map((item, index) => ({
+    item,
+    startsAt: starts[index],
+  }));
+
   return (
-    <div className="space-y-6">
+    <div>
       <Link
-        className="inline-flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted))] transition hover:text-foreground"
+        className="control -ml-2.5"
         href={"/admin/playlists" as Route}
       >
-        <ArrowLeft aria-hidden="true" size={16} />
-        Playlists
+        <ArrowLeft aria-hidden="true" size={14} />
+        All playlists
       </Link>
 
-      <form
-        className="panel-quiet p-5 sm:p-6"
-        onSubmit={(event) => void savePlaylist(event)}
-      >
-        <p className="kicker">Details</p>
-        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
-          <div className="space-y-2">
-            <label
-              className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
-              htmlFor="playlist-title"
-            >
+      <form className="mt-6" onSubmit={(event) => void savePlaylist(event)}>
+        <p className="label">Details</p>
+        <div className="mt-1 grid gap-x-6 gap-y-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <div>
+            <label className="sr-only" htmlFor="playlist-title">
               Title
             </label>
             <input
-              className="field"
+              className="field text-lg font-medium"
               disabled={pendingAction === "playlist"}
               id="playlist-title"
               onChange={(event) =>
@@ -248,15 +260,20 @@ export function PlaylistEditor({
               value={draft.title}
             />
           </div>
-          <div className="space-y-2">
-            <label
-              className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
-              htmlFor="playlist-description"
-            >
+          <button
+            className="control control-solid mb-1 sm:col-start-2 sm:row-start-1"
+            disabled={pendingAction === "playlist"}
+            type="submit"
+          >
+            <Save aria-hidden="true" size={14} />
+            Save
+          </button>
+          <div className="sm:col-span-2">
+            <label className="sr-only" htmlFor="playlist-description">
               Description
             </label>
-            <input
-              className="field"
+            <textarea
+              className="field block min-h-[2.75rem] w-full resize-none leading-snug"
               disabled={pendingAction === "playlist"}
               id="playlist-description"
               onChange={(event) =>
@@ -265,38 +282,26 @@ export function PlaylistEditor({
                   description: event.target.value,
                 }))
               }
+              placeholder="Description (optional)"
+              rows={2}
               value={draft.description}
             />
           </div>
-          <button
-            className="btn-primary"
-            disabled={pendingAction === "playlist"}
-            type="submit"
-          >
-            <Save aria-hidden="true" size={16} />
-            Save
-          </button>
         </div>
       </form>
 
       {message ? (
-        <p className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface)/0.7)] px-3 py-2 text-sm text-[hsl(var(--muted))]">
+        <p className="pt-4 text-sm text-ink-2" role="status">
           {message}
         </p>
       ) : null}
 
-      <form
-        className="panel-quiet p-5 sm:p-6"
-        onSubmit={(event) => void addTune(event)}
-      >
-        <p className="kicker">Add a song</p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div className="space-y-2">
-            <label
-              className="text-xs font-medium uppercase tracking-[0.2em] text-[hsl(var(--muted))]"
-              htmlFor="add-tune"
-            >
-              Song
+      <form className="mt-8" onSubmit={(event) => void addTune(event)}>
+        <p className="label">Add a tune</p>
+        <div className="mt-1 grid gap-x-6 gap-y-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <div>
+            <label className="sr-only" htmlFor="add-tune">
+              Tune
             </label>
             <select
               className="field"
@@ -307,120 +312,128 @@ export function PlaylistEditor({
             >
               <option value="">
                 {availableTunes.length === 0
-                  ? "No songs available"
-                  : "Select a song"}
+                  ? "Every tune is already on this playlist"
+                  : "Select a tune"}
               </option>
               {availableTunes.map((tune) => (
                 <option key={tune.id} value={tune.id}>
-                  {tune.title} ({formatDuration(tune.durationSeconds, { fallback: "—:—" })})
+                  {tune.title} (
+                  {formatDuration(tune.durationSeconds, { fallback: "—:—" })})
                 </option>
               ))}
             </select>
           </div>
           <button
-            className="btn-primary"
+            className="control control-solid mb-1"
             disabled={pendingAction === "add" || availableTunes.length === 0}
             type="submit"
           >
-            <Plus aria-hidden="true" size={16} />
+            <Plus aria-hidden="true" size={14} />
             Add
           </button>
         </div>
       </form>
 
-      <div className="space-y-4">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h3 className="display-heading text-xl font-semibold">Items</h3>
-            <p className="mt-1 text-sm text-[hsl(var(--muted))]">
-              {currentItems.length} song{currentItems.length === 1 ? "" : "s"}
-            </p>
-          </div>
+      <div className="mt-10">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+          <h2 className="text-xl font-semibold tracking-tight">Running order</h2>
+          <p className="figure text-sm text-ink-3">
+            {currentItems.length} tune{currentItems.length === 1 ? "" : "s"}
+            {runningTimeSeconds > 0
+              ? ` · ${formatTotalDuration(runningTimeSeconds)}`
+              : ""}
+          </p>
         </div>
 
         {currentItems.length === 0 ? (
-          <div className="panel-quiet grid place-items-center gap-3 p-10 text-center">
-            <span className="grid size-12 place-items-center rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--surface-2)/0.7)] text-[hsl(var(--accent))]">
-              <ListMusic size={20} aria-hidden="true" />
-            </span>
-            <div>
-              <h3 className="display-heading text-lg font-semibold">
-                No songs in this playlist
-              </h3>
-              <p className="mt-1 text-sm text-[hsl(var(--muted))]">
-                Add songs from the selector above.
-              </p>
-            </div>
+          <div className="rule-t rule-b mt-4 py-14 text-center">
+            <p className="text-lg font-medium text-ink">Nothing on this playlist</p>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-ink-2">
+              Add a tune above. The order you build here is the order listeners
+              hear, so it is worth arranging deliberately.
+            </p>
           </div>
         ) : (
-          <div className="panel-quiet overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-[hsl(var(--border)/0.5)] text-left text-sm">
-                <thead className="text-[11px] uppercase tracking-[0.18em] text-[hsl(var(--muted))]">
-                  <tr className="bg-[hsl(var(--surface-2)/0.4)]">
-                    <th className="px-5 py-3 font-semibold">#</th>
-                    <th className="px-5 py-3 font-semibold">Song</th>
-                    <th className="px-5 py-3 font-semibold">Duration</th>
-                    <th className="px-5 py-3 font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[hsl(var(--border)/0.4)]">
-                  {currentItems.map((item, index) => {
-                    const isPending = pendingAction === item.id;
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[40rem] border-collapse text-left">
+              <thead>
+                <tr className="rule-b">
+                  <th className="label w-12 pb-2 pr-4 align-bottom font-medium">
+                    Pos
+                  </th>
+                  <th className="label pb-2 pr-4 align-bottom font-medium">Tune</th>
+                  <th className="label w-24 pb-2 pr-4 align-bottom text-right font-medium">
+                    Starts
+                  </th>
+                  <th className="label w-24 pb-2 pr-4 align-bottom text-right font-medium">
+                    Length
+                  </th>
+                  <th className="label pb-2 align-bottom text-right font-medium">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(({ item, startsAt }, index) => {
+                  const isPending = pendingAction === item.id;
 
-                    return (
-                      <tr className="align-top" key={item.id}>
-                        <td className="px-5 py-4 font-mono text-xs text-[hsl(var(--muted))]">
-                          {(index + 1).toString().padStart(2, "0")}
-                        </td>
-                        <td className="min-w-72 px-5 py-4">
-                          <div className="font-medium">{item.tune.title}</div>
-                        </td>
-                        <td className="px-5 py-4 font-mono text-xs text-[hsl(var(--muted))]">
-                          {formatDuration(item.tune.durationSeconds, { fallback: "—:—" })}
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex gap-2">
-                            <button
-                              aria-label={`Move ${item.tune.title} up`}
-                              className="btn-ghost-icon"
-                              disabled={isPending || index === 0}
-                              onClick={() => void moveItem(item.id, index - 1)}
-                              title="Move up"
-                              type="button"
-                            >
-                              <ArrowUp aria-hidden="true" size={16} />
-                            </button>
-                            <button
-                              aria-label={`Move ${item.tune.title} down`}
-                              className="btn-ghost-icon"
-                              disabled={
-                                isPending || index === currentItems.length - 1
-                              }
-                              onClick={() => void moveItem(item.id, index + 1)}
-                              title="Move down"
-                              type="button"
-                            >
-                              <ArrowDown aria-hidden="true" size={16} />
-                            </button>
-                            <button
-                              aria-label={`Remove ${item.tune.title}`}
-                              className="btn-danger-icon"
-                              disabled={isPending}
-                              onClick={() => void removeItem(item.id)}
-                              title="Remove song"
-                              type="button"
-                            >
-                              <Trash2 aria-hidden="true" size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                  return (
+                    <tr className="rule-b align-middle" key={item.id}>
+                      <td className="figure py-3 pr-4 text-xs text-ink-3">
+                        {(index + 1).toString().padStart(2, "0")}
+                      </td>
+                      <td className="min-w-64 py-3 pr-4 text-base text-ink">
+                        {item.tune.title}
+                      </td>
+                      <td className="figure py-3 pr-4 text-right text-xs text-ink-3">
+                        {formatDuration(startsAt, { fallback: "0:00" })}
+                      </td>
+                      <td className="figure py-3 pr-4 text-right text-xs text-ink-2">
+                        {formatDuration(item.tune.durationSeconds, {
+                          fallback: "—:—",
+                        })}
+                      </td>
+                      <td className="py-3">
+                        <div className="flex items-center justify-end gap-0.5">
+                          <button
+                            aria-label={`Move ${item.tune.title} up`}
+                            className="control control-icon"
+                            disabled={isPending || index === 0}
+                            onClick={() => void moveItem(item.id, index - 1)}
+                            title="Move up"
+                            type="button"
+                          >
+                            <ArrowUp aria-hidden="true" size={15} />
+                          </button>
+                          <button
+                            aria-label={`Move ${item.tune.title} down`}
+                            className="control control-icon"
+                            disabled={
+                              isPending || index === currentItems.length - 1
+                            }
+                            onClick={() => void moveItem(item.id, index + 1)}
+                            title="Move down"
+                            type="button"
+                          >
+                            <ArrowDown aria-hidden="true" size={15} />
+                          </button>
+                          <button
+                            aria-label={`Remove ${item.tune.title}`}
+                            className="control control-icon control-danger"
+                            disabled={isPending}
+                            onClick={() => void removeItem(item.id)}
+                            title="Take off this playlist"
+                            type="button"
+                          >
+                            <Trash2 aria-hidden="true" size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -464,5 +477,3 @@ function applyServerItemPositions(
     }))
     .sort((left, right) => left.position - right.position);
 }
-
-

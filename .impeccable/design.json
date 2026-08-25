@@ -1,0 +1,550 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-25T12:00:00.000Z",
+  "title": "Design System: SoundShelf",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Register Ground",
+        "canonical": "hsl(240 20% 99%)",
+        "tonalRamp": [
+          "oklch(15% 0.012 264)",
+          "oklch(27% 0.012 264)",
+          "oklch(40% 0.011 264)",
+          "oklch(54% 0.010 264)",
+          "oklch(68% 0.009 264)",
+          "oklch(82% 0.008 264)",
+          "oklch(93% 0.007 264)",
+          "oklch(99% 0.006 264)"
+        ]
+      },
+      "bg-raised": {
+        "role": "neutral",
+        "displayName": "Raised Ground",
+        "canonical": "hsl(240 14% 96.5%)",
+        "tonalRamp": [
+          "oklch(15% 0.010 264)",
+          "oklch(27% 0.010 264)",
+          "oklch(40% 0.009 264)",
+          "oklch(54% 0.008 264)",
+          "oklch(68% 0.008 264)",
+          "oklch(82% 0.007 264)",
+          "oklch(91% 0.007 264)",
+          "oklch(96.5% 0.006 264)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "hsl(240 7% 11%)",
+        "tonalRamp": [
+          "oklch(11% 0.008 264)",
+          "oklch(22% 0.008 264)",
+          "oklch(34% 0.008 264)",
+          "oklch(46% 0.007 264)",
+          "oklch(58% 0.007 264)",
+          "oklch(72% 0.006 264)",
+          "oklch(86% 0.006 264)",
+          "oklch(97% 0.006 264)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Secondary Ink",
+        "canonical": "hsl(240 5% 40%)",
+        "tonalRamp": [
+          "oklch(18% 0.006 264)",
+          "oklch(28% 0.006 264)",
+          "oklch(40% 0.006 264)",
+          "oklch(52% 0.005 264)",
+          "oklch(64% 0.005 264)",
+          "oklch(76% 0.005 264)",
+          "oklch(88% 0.004 264)",
+          "oklch(96% 0.004 264)"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "hsl(240 4% 43%)",
+        "tonalRamp": [
+          "oklch(20% 0.005 264)",
+          "oklch(32% 0.005 264)",
+          "oklch(43% 0.005 264)",
+          "oklch(55% 0.004 264)",
+          "oklch(67% 0.004 264)",
+          "oklch(78% 0.004 264)",
+          "oklch(88% 0.003 264)",
+          "oklch(96% 0.003 264)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "hsl(240 9% 90%)",
+        "tonalRamp": [
+          "oklch(17% 0.008 264)",
+          "oklch(30% 0.008 264)",
+          "oklch(45% 0.007 264)",
+          "oklch(60% 0.007 264)",
+          "oklch(74% 0.007 264)",
+          "oklch(84% 0.007 264)",
+          "oklch(90% 0.007 264)",
+          "oklch(96% 0.006 264)"
+        ]
+      },
+      "rule-strong": {
+        "role": "neutral",
+        "displayName": "Strong Rule",
+        "canonical": "hsl(240 8% 78%)",
+        "tonalRamp": [
+          "oklch(17% 0.008 264)",
+          "oklch(30% 0.008 264)",
+          "oklch(45% 0.007 264)",
+          "oklch(60% 0.007 264)",
+          "oklch(72% 0.007 264)",
+          "oklch(78% 0.007 264)",
+          "oklch(88% 0.006 264)",
+          "oklch(96% 0.005 264)"
+        ]
+      },
+      "danger": {
+        "role": "semantic",
+        "displayName": "Archive Red",
+        "canonical": "hsl(356 62% 42%)",
+        "tonalRamp": [
+          "oklch(22% 0.12 18)",
+          "oklch(32% 0.13 18)",
+          "oklch(42% 0.14 18)",
+          "oklch(52% 0.14 18)",
+          "oklch(62% 0.13 18)",
+          "oklch(72% 0.11 18)",
+          "oklch(84% 0.07 18)",
+          "oklch(94% 0.03 18)"
+        ]
+      },
+      "mood": {
+        "role": "primary",
+        "displayName": "Classification Mark",
+        "canonical": "hsl(220 68% 45%)",
+        "tonalRamp": [
+          "oklch(22% 0.10 264)",
+          "oklch(32% 0.12 264)",
+          "oklch(42% 0.13 264)",
+          "oklch(52% 0.13 264)",
+          "oklch(62% 0.12 264)",
+          "oklch(72% 0.10 264)",
+          "oklch(84% 0.06 264)",
+          "oklch(94% 0.03 264)"
+        ]
+      },
+      "mood-ink": {
+        "role": "primary",
+        "displayName": "Classification Ink",
+        "canonical": "hsl(220 64% 28%)",
+        "tonalRamp": [
+          "oklch(18% 0.10 264)",
+          "oklch(28% 0.12 264)",
+          "oklch(38% 0.12 264)",
+          "oklch(50% 0.12 264)",
+          "oklch(62% 0.11 264)",
+          "oklch(74% 0.09 264)",
+          "oklch(86% 0.05 264)",
+          "oklch(95% 0.02 264)"
+        ]
+      },
+      "bg-dark": {
+        "role": "neutral",
+        "displayName": "Near-Black Ground",
+        "canonical": "hsl(240 8% 5%)",
+        "tonalRamp": [
+          "oklch(5% 0.008 264)",
+          "oklch(12% 0.008 264)",
+          "oklch(22% 0.008 264)",
+          "oklch(36% 0.007 264)",
+          "oklch(52% 0.006 264)",
+          "oklch(68% 0.006 264)",
+          "oklch(84% 0.006 264)",
+          "oklch(97% 0.006 264)"
+        ]
+      },
+      "bg-raised-dark": {
+        "role": "neutral",
+        "displayName": "Raised Night",
+        "canonical": "hsl(240 7% 9%)",
+        "tonalRamp": [
+          "oklch(9% 0.008 264)",
+          "oklch(16% 0.008 264)",
+          "oklch(26% 0.007 264)",
+          "oklch(40% 0.007 264)",
+          "oklch(54% 0.006 264)",
+          "oklch(70% 0.006 264)",
+          "oklch(84% 0.005 264)",
+          "oklch(96% 0.005 264)"
+        ]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Cool White",
+        "canonical": "hsl(240 15% 97%)",
+        "tonalRamp": [
+          "oklch(12% 0.010 264)",
+          "oklch(24% 0.010 264)",
+          "oklch(38% 0.010 264)",
+          "oklch(52% 0.010 264)",
+          "oklch(66% 0.010 264)",
+          "oklch(80% 0.010 264)",
+          "oklch(90% 0.010 264)",
+          "oklch(97% 0.010 264)"
+        ]
+      },
+      "ink-2-dark": {
+        "role": "neutral",
+        "displayName": "Cool Silver",
+        "canonical": "hsl(240 6% 67%)",
+        "tonalRamp": [
+          "oklch(18% 0.006 264)",
+          "oklch(30% 0.006 264)",
+          "oklch(42% 0.006 264)",
+          "oklch(54% 0.006 264)",
+          "oklch(67% 0.006 264)",
+          "oklch(78% 0.005 264)",
+          "oklch(88% 0.005 264)",
+          "oklch(96% 0.004 264)"
+        ]
+      },
+      "ink-3-dark": {
+        "role": "neutral",
+        "displayName": "Cool Dim",
+        "canonical": "hsl(240 5% 55%)",
+        "tonalRamp": [
+          "oklch(18% 0.005 264)",
+          "oklch(30% 0.005 264)",
+          "oklch(42% 0.005 264)",
+          "oklch(55% 0.005 264)",
+          "oklch(66% 0.004 264)",
+          "oklch(78% 0.004 264)",
+          "oklch(88% 0.003 264)",
+          "oklch(96% 0.003 264)"
+        ]
+      },
+      "rule-dark": {
+        "role": "neutral",
+        "displayName": "Night Hairline",
+        "canonical": "hsl(240 6% 17%)",
+        "tonalRamp": [
+          "oklch(10% 0.006 264)",
+          "oklch(17% 0.006 264)",
+          "oklch(28% 0.006 264)",
+          "oklch(42% 0.006 264)",
+          "oklch(58% 0.005 264)",
+          "oklch(74% 0.005 264)",
+          "oklch(88% 0.004 264)",
+          "oklch(96% 0.004 264)"
+        ]
+      },
+      "rule-strong-dark": {
+        "role": "neutral",
+        "displayName": "Night Rule",
+        "canonical": "hsl(240 6% 30%)",
+        "tonalRamp": [
+          "oklch(12% 0.006 264)",
+          "oklch(22% 0.006 264)",
+          "oklch(30% 0.006 264)",
+          "oklch(44% 0.006 264)",
+          "oklch(58% 0.005 264)",
+          "oklch(72% 0.005 264)",
+          "oklch(86% 0.004 264)",
+          "oklch(96% 0.004 264)"
+        ]
+      },
+      "danger-dark": {
+        "role": "semantic",
+        "displayName": "Lifted Archive Red",
+        "canonical": "hsl(356 76% 66%)",
+        "tonalRamp": [
+          "oklch(22% 0.12 18)",
+          "oklch(34% 0.14 18)",
+          "oklch(46% 0.15 18)",
+          "oklch(58% 0.15 18)",
+          "oklch(66% 0.14 18)",
+          "oklch(76% 0.11 18)",
+          "oklch(86% 0.07 18)",
+          "oklch(95% 0.03 18)"
+        ]
+      },
+      "mood-dark": {
+        "role": "primary",
+        "displayName": "Classification Mark (dark)",
+        "canonical": "hsl(220 72% 56%)",
+        "tonalRamp": [
+          "oklch(22% 0.10 264)",
+          "oklch(34% 0.12 264)",
+          "oklch(46% 0.13 264)",
+          "oklch(56% 0.13 264)",
+          "oklch(66% 0.12 264)",
+          "oklch(76% 0.09 264)",
+          "oklch(86% 0.05 264)",
+          "oklch(95% 0.02 264)"
+        ]
+      },
+      "mood-ink-dark": {
+        "role": "primary",
+        "displayName": "Classification Ink (dark)",
+        "canonical": "hsl(220 74% 66%)",
+        "tonalRamp": [
+          "oklch(24% 0.10 264)",
+          "oklch(36% 0.12 264)",
+          "oklch(48% 0.13 264)",
+          "oklch(58% 0.13 264)",
+          "oklch(66% 0.12 264)",
+          "oklch(76% 0.09 264)",
+          "oklch(86% 0.05 264)",
+          "oklch(95% 0.02 264)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Studio page titles and the Playlist title on an editor. 2.25rem / 600 / tracking-tight. Largest shipped role."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section titles and selected Playlist titles in the listener register at sm+."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Wordmark, small-viewport Playlist titles, empty-state headlines (those at 500)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default copy, field values, table titles. 0.9375rem / 1.5."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "Controls, transport track title, supporting row copy. 0.8125rem / 500."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Column heads, field labels, state words. Uppercase, 0.08em, wdth 88%, ink-3."
+      },
+      "shelfmark": {
+        "displayName": "Shelfmark",
+        "purpose": "Filed code SS·XXX. Tabular, wdth 82%, 600, mood-ink. The identity type."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Treatment for every quantity: tnum, 0.01em. Applied at any size."
+      }
+    },
+    "shadows": [
+      {
+        "name": "inset-hairline",
+        "value": "inset 0 0 0 1px hsl(var(--rule-strong))",
+        "purpose": "Outline controls and floating overlays. A drawn edge, not elevation."
+      },
+      {
+        "name": "inset-hairline-resting",
+        "value": "inset 0 0 0 1px hsl(var(--rule))",
+        "purpose": "Disabled solid control, so the label stays readable on bg-raised."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state",
+        "value": "160ms ease-out",
+        "purpose": "Colour and background on controls and fields."
+      },
+      {
+        "name": "row-hover",
+        "value": "140ms ease-out",
+        "purpose": "Register row ground change on hover."
+      },
+      {
+        "name": "tick-in",
+        "value": "220ms cubic-bezier(0.2, 0.9, 0.25, 1)",
+        "purpose": "Figure digits stepping to a new value (translateY -0.42em, fade)."
+      },
+      {
+        "name": "row-in",
+        "value": "260ms ease-out",
+        "purpose": "Arriving track register fade."
+      },
+      {
+        "name": "level",
+        "value": "1s ease-in-out infinite",
+        "purpose": "Playing indicator bars, scaleY 0.3↔1, origin bottom."
+      },
+      {
+        "name": "reduced",
+        "value": "0.001ms",
+        "purpose": "prefers-reduced-motion: collapse animation and transition duration."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Ghost Control",
+      "kind": "button",
+      "refersTo": "control",
+      "description": "Default control: transparent, ink-2, 32px × 2px radius. Hover washes bg-raised.",
+      "html": "<button class=\"ds-control\" type=\"button\">Share playlist</button>",
+      "css": ".ds-control { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; height: 2rem; padding: 0 0.625rem; border: 0; border-radius: 2px; background: transparent; color: hsl(var(--ink-2)); font-family: inherit; font-size: 0.8125rem; font-weight: 500; line-height: 1.25rem; cursor: pointer; transition: color 160ms ease-out, background-color 160ms ease-out; } .ds-control:hover:not(:disabled) { color: hsl(var(--ink)); background: hsl(var(--bg-raised)); } .ds-control:disabled { color: hsl(var(--ink-3)); opacity: 0.5; cursor: not-allowed; } .ds-control:focus-visible { outline: 2px solid hsl(var(--mood-h) var(--mood-s-mark) var(--mood-l-mark)); outline-offset: 2px; border-radius: 1px; }"
+    },
+    {
+      "name": "Solid Control",
+      "kind": "button",
+      "refersTo": "control-solid",
+      "description": "The one filled action. Ink on ground — mood never paints a CTA.",
+      "html": "<button class=\"ds-control-solid\" type=\"button\">Create</button>",
+      "css": ".ds-control-solid { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; height: 2rem; padding: 0 0.625rem; border: 0; border-radius: 2px; background: hsl(var(--ink)); color: hsl(var(--bg)); font-family: inherit; font-size: 0.8125rem; font-weight: 500; line-height: 1.25rem; cursor: pointer; transition: color 160ms ease-out, background-color 160ms ease-out; } .ds-control-solid:hover:not(:disabled) { background: hsl(var(--ink-2)); color: hsl(var(--bg)); } .ds-control-solid:disabled { background: hsl(var(--bg-raised)); color: hsl(var(--ink-3)); box-shadow: inset 0 0 0 1px hsl(var(--rule)); opacity: 1; cursor: not-allowed; } .ds-control-solid:focus-visible { outline: 2px solid hsl(var(--mood-h) var(--mood-s-mark) var(--mood-l-mark)); outline-offset: 2px; border-radius: 1px; }"
+    },
+    {
+      "name": "Outline Control",
+      "kind": "button",
+      "refersTo": "control-outline",
+      "description": "Ghost plus inset strong-rule hairline. Retry and secondary commits.",
+      "html": "<button class=\"ds-control-outline\" type=\"button\">Try again</button>",
+      "css": ".ds-control-outline { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; height: 2rem; padding: 0 0.625rem; border: 0; border-radius: 2px; background: transparent; color: hsl(var(--ink-2)); font-family: inherit; font-size: 0.8125rem; font-weight: 500; box-shadow: inset 0 0 0 1px hsl(var(--rule-strong)); cursor: pointer; transition: color 160ms ease-out, background-color 160ms ease-out; } .ds-control-outline:hover:not(:disabled) { color: hsl(var(--ink)); background: hsl(var(--bg-raised)); } .ds-control-outline:focus-visible { outline: 2px solid hsl(var(--mood-h) var(--mood-s-mark) var(--mood-l-mark)); outline-offset: 2px; border-radius: 1px; }"
+    },
+    {
+      "name": "Icon Control",
+      "kind": "button",
+      "refersTo": "control-icon",
+      "description": "32×32 ghost. Transport skips, theme, row actions. Danger tints only on hover.",
+      "html": "<button class=\"ds-control-icon\" type=\"button\" aria-label=\"Play\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M8 5v14l11-7z\"/></svg></button>",
+      "css": ".ds-control-icon { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; padding: 0; border: 0; border-radius: 2px; background: transparent; color: hsl(var(--ink-2)); cursor: pointer; transition: color 160ms ease-out, background-color 160ms ease-out; } .ds-control-icon:hover:not(:disabled) { color: hsl(var(--ink)); background: hsl(var(--bg-raised)); } .ds-control-icon:disabled { color: hsl(var(--ink-3)); opacity: 0.5; cursor: not-allowed; } .ds-control-icon:focus-visible { outline: 2px solid hsl(var(--mood-h) var(--mood-s-mark) var(--mood-l-mark)); outline-offset: 2px; border-radius: 1px; }"
+    },
+    {
+      "name": "Ruled Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "A baseline the value sits on. No box, no radius. Focus turns the rule to mood.",
+      "html": "<label class=\"ds-field-wrap\"><span class=\"ds-label\">Email</span><input class=\"ds-field\" type=\"email\" placeholder=\"curator@soundshelf\" /></label>",
+      "css": ".ds-field-wrap { display: grid; gap: 0.25rem; } .ds-label { font-size: 0.6875rem; line-height: 1rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; font-stretch: 88%; color: hsl(var(--ink-3)); } .ds-field { width: 100%; padding: 0.375rem 0 0.4375rem; background: transparent; border: 0; border-bottom: 1px solid hsl(var(--rule-strong)); border-radius: 0; font-family: inherit; font-size: 0.9375rem; line-height: 1.5rem; color: hsl(var(--ink)); outline: none; transition: border-color 160ms ease-out; } .ds-field::placeholder { color: hsl(var(--ink-3)); } .ds-field:focus { border-bottom-color: hsl(var(--mood-h) var(--mood-s-mark) var(--mood-l-mark)); } .ds-field:focus-visible { outline: none; } .ds-field:disabled { color: hsl(var(--ink-3)); cursor: not-allowed; }"
+    },
+    {
+      "name": "Shelfmark",
+      "kind": "custom",
+      "refersTo": "shelfmark",
+      "description": "Identity device: 3px mood tab plus SS·XXX in narrow tabular mood-ink.",
+      "html": "<span class=\"ds-shelf\"><span class=\"ds-shelf-tab\" aria-hidden=\"true\"></span><span class=\"ds-shelfmark\">SS·4KQ</span></span>",
+      "css": ".ds-shelf { display: inline-flex; align-items: center; gap: 0.5rem; } .ds-shelf-tab { display: inline-block; width: 3px; height: 0.75em; border-radius: 0.5px; background: hsl(var(--mood-h) var(--mood-s-mark) var(--mood-l-mark)); } .ds-shelfmark { font-variant-numeric: tabular-nums; font-feature-settings: \"tnum\" 1; font-stretch: 82%; font-weight: 600; letter-spacing: 0.04em; font-size: 0.75rem; line-height: 1.125rem; color: hsl(var(--mood-h) var(--mood-s-ink) var(--mood-l-ink)); }"
+    },
+    {
+      "name": "Register Row",
+      "kind": "custom",
+      "refersTo": "row",
+      "description": "Full-width Playlist row. Tab and shelfmark lead; title large; figures right-aligned; hover is a ground change.",
+      "html": "<button class=\"ds-row\" type=\"button\"><span class=\"ds-shelf\"><span class=\"ds-shelf-tab\" aria-hidden=\"true\"></span><span class=\"ds-shelfmark\">SS·4KQ</span></span><span class=\"ds-row-title\">Sunday Morning Tape</span><span class=\"ds-figure\">7</span><span class=\"ds-figure\">31:23</span></button>",
+      "css": ".ds-row { display: grid; grid-template-columns: 7.5rem minmax(0,1fr) 5rem 6.5rem; align-items: center; gap: 1rem; width: 100%; padding: 1rem 0.25rem; border: 0; border-bottom: 1px solid hsl(var(--rule)); background: transparent; text-align: left; cursor: pointer; transition: background-color 140ms ease-out; } .ds-row:hover { background: hsl(var(--bg-raised)); } .ds-row:focus-visible { outline: 2px solid hsl(var(--mood-h) var(--mood-s-mark) var(--mood-l-mark)); outline-offset: 2px; border-radius: 1px; } .ds-row .ds-shelf { display: inline-flex; align-items: center; gap: 0.5rem; } .ds-row .ds-shelf-tab { display: inline-block; width: 3px; height: 0.75em; border-radius: 0.5px; background: hsl(var(--mood-h) var(--mood-s-mark) var(--mood-l-mark)); } .ds-row .ds-shelfmark { font-variant-numeric: tabular-nums; font-feature-settings: \"tnum\" 1; font-stretch: 82%; font-weight: 600; letter-spacing: 0.04em; font-size: 0.75rem; color: hsl(var(--mood-h) var(--mood-s-ink) var(--mood-l-ink)); } .ds-row-title { font-size: 1.375rem; line-height: 1.75rem; font-weight: 500; letter-spacing: -0.025em; color: hsl(var(--ink)); } .ds-figure { font-variant-numeric: tabular-nums; font-feature-settings: \"tnum\" 1; letter-spacing: 0.01em; font-size: 0.8125rem; color: hsl(var(--ink-2)); text-align: right; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "status-dot",
+      "description": "A state word with a 6px dot. Active is ink; muted is rule-strong. Colour never carries the state alone.",
+      "html": "<span class=\"ds-status ds-status-active\"><span class=\"ds-status-dot\" aria-hidden=\"true\"></span>Public</span>",
+      "css": ".ds-status { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; line-height: 1rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; font-stretch: 88%; } .ds-status-dot { width: 6px; height: 6px; border-radius: 999px; } .ds-status-active { color: hsl(var(--ink)); } .ds-status-active .ds-status-dot { background: hsl(var(--ink)); } .ds-status-muted { color: hsl(var(--ink-3)); } .ds-status-muted .ds-status-dot { background: hsl(var(--rule-strong)); }"
+    },
+    {
+      "name": "Studio Nav",
+      "kind": "nav",
+      "refersTo": "label",
+      "description": "Sidebar items. Active is ink at 500 with a shelf tab; inactive is ink-2 with a 3px spacer.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Admin navigation\"><a class=\"ds-nav-item\" href=\"#\"><span class=\"ds-nav-spacer\"></span>Tunes</a><a class=\"ds-nav-item ds-nav-item-active\" href=\"#\" aria-current=\"page\"><span class=\"ds-shelf-tab\" aria-hidden=\"true\"></span>Playlists</a></nav>",
+      "css": ".ds-nav { display: grid; gap: 0.125rem; } .ds-nav-item { display: flex; align-items: center; gap: 0.625rem; padding: 0.375rem 0.625rem 0.375rem 0; border-radius: 2px; font-size: 0.8125rem; line-height: 1.25rem; color: hsl(var(--ink-2)); text-decoration: none; transition: color 150ms ease-out; } .ds-nav-item:hover { color: hsl(var(--ink)); } .ds-nav-item:focus-visible { outline: 2px solid hsl(var(--mood-h) var(--mood-s-mark) var(--mood-l-mark)); outline-offset: 2px; border-radius: 1px; } .ds-nav-item-active { font-weight: 500; color: hsl(var(--ink)); } .ds-nav-spacer { width: 3px; } .ds-nav-item .ds-shelf-tab { display: inline-block; width: 3px; height: 0.75em; border-radius: 0.5px; background: hsl(var(--mood-h) var(--mood-s-mark) var(--mood-l-mark)); }"
+    },
+    {
+      "name": "Range",
+      "kind": "input",
+      "refersTo": "control",
+      "description": "Hairline track, 10px ink-dot thumb. Volume and any register slider.",
+      "html": "<input class=\"ds-range\" type=\"range\" min=\"0\" max=\"1\" step=\"0.01\" value=\"0.8\" aria-label=\"Volume\" />",
+      "css": ".ds-range { -webkit-appearance: none; appearance: none; width: 8rem; height: 10px; background: linear-gradient(hsl(var(--rule-strong)), hsl(var(--rule-strong))) center / 100% 2px no-repeat; cursor: pointer; } .ds-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 10px; height: 10px; border: 0; border-radius: 999px; background: hsl(var(--ink)); } .ds-range::-moz-range-thumb { width: 10px; height: 10px; border: 0; border-radius: 999px; background: hsl(var(--ink)); } .ds-range:focus-visible { outline: 2px solid hsl(var(--mood-h) var(--mood-s-mark) var(--mood-l-mark)); outline-offset: 2px; border-radius: 1px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Shelfmark",
+    "overview": "SoundShelf is a catalogue, not a listening room and not a cover-art grid. A Playlist is a filed holding: it is recognised by a three-character shelfmark, a 3px hue tab on the same baseline, and the figures that say what it holds and how long it runs. The product stores no artwork, so those three marks *are* the identity.\n\nThe surface is built from three materials only — a cool achromatic ground, a 1px hairline, and Archivo at two widths. Colour enters as one deterministic hue per Playlist, split into a text-safe ink and a fill mark, retuned per theme so the same angle holds on white and on near-black. Light and dark are both first-class; neither is a skin on the other. There are no cards, no panels, no boxes, and no shadows that carry rank. Grouping is a rule and the space around it. The listener reads an ordered register and plays it in the curator's order; the transport is a fixed register at the foot, not a floating player.",
+    "keyCharacteristics": [
+      "Cool 240° achromatic ground and ink; light and dark as equal themes",
+      "One Playlist hue, inherited as `--mood-h` only; sat/lightness are theme parameters",
+      "Archivo with `wdth`: labels at 88%, shelfmarks at 82%; tabular figures on every quantity",
+      "1px hairlines (`--rule` / `--rule-strong`); 2px radii on controls; fields have none",
+      "Fixed rem type (ratio ~1.2); no fluid headings",
+      "Full-width register rows; transport is a ruled foot, never a card"
+    ],
+    "rules": [
+      {
+        "name": "The One Hue Rule",
+        "body": "Colour on the surface is the current Playlist's mood, or danger. Nothing else is coloured. A screen with a second accent has left the system.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tab-and-Ink Rule",
+        "body": "Every mood hue ships two treatments: `mood-ink` for type, `mood` for marks and fills. Never use the fill recipe on text, and never use the ink recipe as a large fill.",
+        "section": "colors"
+      },
+      {
+        "name": "The Neutral Action Rule",
+        "body": "A filled call to action is ink on ground (or ground on ink). Mood may mark identity, the current row, focus, and the scrub fill — it does not paint a button.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Width Rule",
+        "body": "Archivo carries every role. Hire the `wdth` axis (88% labels, 82% shelfmarks) instead of a second family or a mono face.",
+        "section": "typography"
+      },
+      {
+        "name": "The Figure Rule",
+        "body": "Every quantity is tabular. A changing value must not shift its neighbours. Positions are zero-padded to two digits; clocks are `m:ss` or `h:mm:ss`.",
+        "section": "typography"
+      },
+      {
+        "name": "The Register Rule",
+        "body": "Grouping is a hairline and the space around it. Do not wrap a group in a surface. Selecting a Playlist opens its tracks *in place* — the shelf does not navigate away.",
+        "section": "layout"
+      },
+      {
+        "name": "The Hairline Rule",
+        "body": "Depth is a 1px rule or an inset 1px hairline. A drop shadow, blur, or ambient glow is out of system. An inset hairline is a border, not elevation.",
+        "section": "elevation"
+      },
+      {
+        "name": "The 2px Rule",
+        "body": "Radii stay at 2px on controls. Fields stay 0. Do not introduce 8px, 12px, or \"card\" rounding. Circles are reserved for actual dots.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do file every Playlist under a shelfmark, a 3px hue tab, and right-aligned figures on one baseline.",
+      "Do inherit only `--mood-h` and let the theme supply sat/lightness (ink vs mark).",
+      "Do set every quantity in `.figure` (`tnum`, 0.01em) and every column head in `.label`.",
+      "Do divide groups with a 1px `--rule` and space; use an inset 1px hairline for overlays and outline controls.",
+      "Do keep control radii at 2px and field radii at 0.",
+      "Do fill the primary action with `ink`, not `mood`.",
+      "Do name playback state in type (\"PLAYING\") as well as with the level bars.",
+      "Do honour `prefers-reduced-motion` by collapsing motion to `0.001ms`."
+    ],
+    "donts": [
+      "Don't lay holdings out as a cover-art grid, tile gallery, or thumbnail list.",
+      "Don't float a player card, glass panel, or boxed chrome over the register.",
+      "Don't wrap a form, table, or empty state in a card, panel, or filled container.",
+      "Don't use a drop shadow, blur, or ambient glow; the inset hairline is the only permitted `box-shadow`.",
+      "Don't introduce a second type family, a mono face, or fluid/clamp headings.",
+      "Don't paint a button, badge, or progress *container* in the mood hue — tab, scrub fill, focus ring, and text-safe ink only.",
+      "Don't show a column of red destructive icons at rest; danger reads on approach.",
+      "Don't use colour alone to mean playing, public, error, or selected.",
+      "Don't draw a dashed drop-zone or any other box around a file input."
+    ]
+  }
+}

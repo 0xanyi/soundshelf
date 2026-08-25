@@ -1,22 +1,25 @@
 /**
- * Per-playlist mood: a deterministic, warm-leaning hue derived from the id.
+ * Per-Playlist mood: a deterministic hue derived from the Playlist id.
  *
- * The palette skews toward jewel tones and embers — amber, copper, ruby,
- * teal, indigo, violet — so the player always feels like a candlelit room
- * rather than a neon ad.
+ * The hue is SoundShelf's one chromatic element. It behaves like a shelf tab
+ * in a physical catalogue — it marks which holding you are looking at, and it
+ * is the same mark wherever that Playlist appears (row, register, scrub fill,
+ * Studio). Nothing else on the surface is coloured.
+ *
+ * Only the hue angle travels in the DOM. Saturation and lightness are theme
+ * parameters declared in globals.css, because a hue readable on white is not
+ * the same hue readable on near-black, and the tab and the text need
+ * different treatments of the same colour. See `--mood-*` there.
+ *
+ * The hash and the hue stops are unchanged from the previous visual system on
+ * purpose: an existing Playlist keeps the hue its listeners already associate
+ * with it, even though everything around it has been rebuilt.
  */
 
-const HUE_STOPS: Array<{ h: number; complement: number }> = [
-  { h: 36, complement: 12 },   // honey   → ember
-  { h: 22, complement: 348 },  // copper  → ruby
-  { h: 4, complement: 332 },   // ruby    → magenta
-  { h: 332, complement: 280 }, // magenta → violet
-  { h: 280, complement: 220 }, // violet  → indigo
-  { h: 220, complement: 188 }, // indigo  → teal
-  { h: 188, complement: 160 }, // teal    → moss
-  { h: 144, complement: 60 },  // moss    → lime
-  { h: 56, complement: 28 },   // lime    → marigold
-];
+const HUE_STOPS = [36, 22, 4, 332, 280, 220, 188, 144, 56] as const;
+
+/** Hue used before a Playlist is chosen. */
+const NEUTRAL_HUE = 220;
 
 function hash(input: string): number {
   let h = 2166136261;
@@ -28,35 +31,14 @@ function hash(input: string): number {
 }
 
 export type MoodColors = {
-  /** Primary hue, degrees */
+  /** Primary hue, in degrees. */
   hue: number;
-  /** Complementary hue, degrees */
-  hue2: number;
-  /** Inline CSS variables to spread onto a wrapper element */
-  cssVars: { "--mood": string; "--mood-2": string };
+  /** Inline custom properties to spread onto a wrapper element. */
+  cssVars: { "--mood-h": string };
 };
 
 export function getMood(id: string | null | undefined): MoodColors {
-  if (!id) {
-    const fallback = HUE_STOPS[0];
-    return {
-      hue: fallback.h,
-      hue2: fallback.complement,
-      cssVars: {
-        "--mood": `${fallback.h} 96% 62%`,
-        "--mood-2": `${fallback.complement} 86% 56%`,
-      },
-    };
-  }
+  const hue = id ? HUE_STOPS[hash(id) % HUE_STOPS.length] : NEUTRAL_HUE;
 
-  const stop = HUE_STOPS[hash(id) % HUE_STOPS.length];
-
-  return {
-    hue: stop.h,
-    hue2: stop.complement,
-    cssVars: {
-      "--mood": `${stop.h} 92% 60%`,
-      "--mood-2": `${stop.complement} 84% 56%`,
-    },
-  };
+  return { hue, cssVars: { "--mood-h": String(hue) } };
 }

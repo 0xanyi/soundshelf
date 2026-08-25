@@ -5,17 +5,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AudioPlayer, type PlayerTrack } from "@/components/player/audio-player";
 import {
-  BrandHeader,
-  PlaylistCardLibrary,
-  PlaylistQueuePanel,
+  PlaylistRegister,
+  RegisterHeader,
   SharePlaylistButton,
+  SharedPlaylist,
 } from "@/components/player/browser/playlist-browser-ui";
 import type {
   LoadState,
   PublicPlaylistDetail,
   PublicPlaylistSummary,
 } from "@/components/player/browser/types";
-import { safeDuration } from "@/lib/format";
+import { formatTotalDuration, safeDuration } from "@/lib/format";
 import { getMood } from "@/lib/mood";
 
 const sharedPlaylistSearchParam = "playlist";
@@ -24,11 +24,6 @@ function getPlaylistShareUrl(playlistId: string): string {
   const url = new URL(window.location.pathname, window.location.origin);
   url.searchParams.set(sharedPlaylistSearchParam, playlistId);
   return url.toString();
-}
-
-function replacePlaylistUrl(playlistId: string): void {
-  const url = getPlaylistShareUrl(playlistId);
-  window.history.replaceState(window.history.state, "", url);
 }
 
 export function PlaylistBrowser({
@@ -42,16 +37,24 @@ export function PlaylistBrowser({
   );
   const [selectedPlaylist, setSelectedPlaylist] =
     useState<PublicPlaylistDetail | null>(null);
-  const [listState, setListState] = useState<LoadState>("loading");
+  const [listState, setListState] = useState<LoadState>(() =>
+    initialPlaylistId ? "idle" : "loading",
+  );
   const [detailState, setDetailState] = useState<LoadState>("idle");
   const [listError, setListError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [detailReloadKey, setDetailReloadKey] = useState(0);
   const [listReloadKey, setListReloadKey] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTracksOpen, setIsTracksOpen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const isSharedView = Boolean(initialPlaylistId);
 
   useEffect(() => {
+    if (isSharedView) {
+      return;
+    }
+
     const controller = new AbortController();
 
     async function loadPlaylists() {
@@ -90,7 +93,7 @@ export function PlaylistBrowser({
     void loadPlaylists();
 
     return () => controller.abort();
-  }, [listReloadKey]);
+  }, [isSharedView, listReloadKey]);
 
   useEffect(() => {
     if (!selectedPlaylistId) {
@@ -149,21 +152,17 @@ export function PlaylistBrowser({
     [playlists, selectedPlaylistId],
   );
 
-  const totalDurationSeconds = useMemo(() => {
-    if (!selectedPlaylist) {
-      return 0;
-    }
-
-    return selectedPlaylist.tracks.reduce(
-      (total, track) => total + safeDuration(track.durationSeconds),
-      0,
-    );
-  }, [selectedPlaylist]);
+  const shelfDurationSeconds = useMemo(
+    () =>
+      playlists.reduce(
+        (total, playlist) => total + safeDuration(playlist.durationSeconds),
+        0,
+      ),
+    [playlists],
+  );
 
   const currentPlaylistTitle =
     selectedPlaylist?.title ?? selectedSummary?.title ?? null;
-  const currentPlaylistDescription =
-    selectedPlaylist?.description ?? selectedSummary?.description ?? null;
 
   const mood = getMood(selectedPlaylistId);
 
@@ -207,8 +206,6 @@ export function PlaylistBrowser({
 
   const handleSelectPlaylist = useCallback((playlistId: string) => {
     setSelectedPlaylistId(playlistId);
-    setIsTracksOpen(false);
-    replacePlaylistUrl(playlistId);
   }, []);
 
   const getCurrentPlaylistShareUrl = useCallback(() => {
@@ -219,72 +216,95 @@ export function PlaylistBrowser({
     return getPlaylistShareUrl(selectedPlaylistId);
   }, [selectedPlaylistId]);
 
+  const transportOpen = (selectedPlaylist?.tracks.length ?? 0) > 0;
+  const canShare = Boolean(selectedPlaylist && selectedPlaylist.tracks.length > 0);
+
+  const subtitle = isSharedView
+    ? selectedPlaylist
+      ? `${selectedPlaylist.itemCount} tune${
+          selectedPlaylist.itemCount === 1 ? "" : "s"
+        } · ${formatTotalDuration(selectedPlaylist.durationSeconds)}`
+      : detailState === "error"
+        ? "This playlist is not available"
+        : "Opening playlist"
+    : listState === "loading"
+      ? "Loading the shelf"
+      : playlists.length === 0
+        ? "No playlists on the shelf"
+        : `${playlists.length} playlist${playlists.length === 1 ? "" : "s"} · ${formatTotalDuration(
+            shelfDurationSeconds,
+          )}`;
+
   return (
     <main
-      className="relative min-h-screen text-foreground"
+      className="flex min-h-screen flex-col text-ink"
       style={mood.cssVars as CSSProperties}
     >
-      <div className="mx-auto flex min-h-screen w-full max-w-[1320px] flex-col px-4 pt-5 sm:px-6 lg:px-10 lg:pt-8">
-        <BrandHeader />
+      <div className="page flex flex-1 flex-col">
+        <RegisterHeader subtitle={subtitle} />
 
-        <div className="mt-6 grid gap-8 lg:mt-10 lg:gap-10">
-          <section className="flex w-full min-w-0 flex-col">
-            <AudioPlayer
-              key={selectedPlaylist?.id ?? "empty-player"}
-              currentIndex={currentIndex}
-              isQueueOpen={isTracksOpen}
-              playlistTitle={currentPlaylistTitle ?? undefined}
-              queuePanel={
-                <PlaylistQueuePanel
-                  currentIndex={currentIndex}
-                  description={currentPlaylistDescription}
-                  error={detailError}
-                  playlist={selectedPlaylist}
-                  state={detailState}
-                  title={currentPlaylistTitle}
-                  totalDurationSeconds={totalDurationSeconds}
-                  onClose={() => setIsTracksOpen(false)}
-                  onRetry={() => setDetailReloadKey((key) => key + 1)}
-                  onSelectTrack={handleSelectTrack}
-                />
-              }
-              tracks={selectedPlaylist?.tracks ?? []}
-              onCurrentIndexChange={handleSelectTrack}
-              onToggleQueue={() => setIsTracksOpen((open) => !open)}
-              onDurationDiscovered={handleDurationDiscovered}
-            />
-          </section>
+        {isSharedView ? (
+          <SharedPlaylist
+            currentIndex={currentIndex}
+            detail={selectedPlaylist}
+            error={detailError}
+            isPlaying={isPlaying}
+            state={detailState}
+            onRetry={() => setDetailReloadKey((key) => key + 1)}
+            onSelectTrack={handleSelectTrack}
+          />
+        ) : (
+          <PlaylistRegister
+            playlists={playlists}
+            selectedPlaylistId={selectedPlaylistId}
+            state={listState}
+            error={listError}
+            onRetry={() => setListReloadKey((key) => key + 1)}
+            onSelect={handleSelectPlaylist}
+            detail={selectedPlaylist}
+            detailState={detailState}
+            detailError={detailError}
+            onRetryDetail={() => setDetailReloadKey((key) => key + 1)}
+            currentIndex={currentIndex}
+            isPlaying={isPlaying}
+            onSelectTrack={handleSelectTrack}
+          />
+        )}
 
-          <section>
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="kicker">Curations</p>
-                {currentPlaylistTitle ? (
-                  <p className="mt-1 text-sm text-[hsl(var(--muted))]">
-                    Sharing {currentPlaylistTitle}
-                  </p>
-                ) : null}
-              </div>
-              <SharePlaylistButton
-                disabled={!selectedPlaylistId}
-                getShareUrl={getCurrentPlaylistShareUrl}
-              />
-            </div>
-            <PlaylistCardLibrary
-              error={listError}
-              playlists={playlists}
-              selectedPlaylistId={selectedPlaylistId}
-              state={listState}
-              onRetry={() => setListReloadKey((key) => key + 1)}
-              onSelect={handleSelectPlaylist}
-            />
-          </section>
-        </div>
+        {canShare ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 py-6">
+            <p className="text-xs text-ink-3">
+              Sharing {currentPlaylistTitle}
+            </p>
+            <SharePlaylistButton getShareUrl={getCurrentPlaylistShareUrl} />
+          </div>
+        ) : null}
 
-        <footer className="mt-auto border-t border-[hsl(var(--border)/0.45)] pt-6 text-center font-mono text-[10px] uppercase tracking-[0.24em] text-[hsl(var(--muted))]">
-          Copyright {new Date().getFullYear()} SoundShelf. All rights reserved.
+        {/* Sit on the viewport floor when the register is short. pb-32 only
+            when the transport is actually mounted, so an empty shelf is not
+            padded for a bar that is not there. */}
+        <footer
+          className={`rule-t mt-auto flex flex-wrap items-center justify-between gap-2 py-6 text-xs text-ink-3 ${
+            transportOpen ? "pb-32" : ""
+          }`}
+        >
+          <span>© {new Date().getFullYear()} SoundShelf</span>
+          <span className="figure">
+            Played in the order the curator set it
+          </span>
         </footer>
       </div>
+
+      <AudioPlayer
+        key={selectedPlaylist?.id ?? "empty-player"}
+        currentIndex={currentIndex}
+        playlistId={selectedPlaylistId}
+        playlistTitle={currentPlaylistTitle}
+        tracks={selectedPlaylist?.tracks ?? []}
+        onCurrentIndexChange={handleSelectTrack}
+        onPlayingChange={setIsPlaying}
+        onDurationDiscovered={handleDurationDiscovered}
+      />
     </main>
   );
 }

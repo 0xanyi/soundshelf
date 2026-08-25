@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { SignOutButton } from "@/components/admin/sign-out-button";
 import { BrandIcon } from "@/components/ui/brand-icon";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { auth } from "@/lib/auth";
 import { requireAdminSession } from "@/lib/http/errors";
 
@@ -39,47 +40,45 @@ export default async function AdminLayout({
   }
 
   return (
-    <main className="relative min-h-screen text-foreground">
-      <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-8 lg:px-6 lg:py-8">
-        <aside className="lg:sticky lg:top-6 lg:self-start">
-          <div className="panel overflow-hidden">
-            <BrandBlock />
-            <AdminNav />
-            <div className="border-t border-[hsl(var(--border)/0.6)] px-5 py-4">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-[hsl(var(--muted))]">
-                Signed in
-              </p>
-              <p
-                className="mt-1 truncate text-sm font-medium"
-                title={adminSession?.email ?? ""}
-              >
-                {adminSession?.email ?? "Admin"}
-              </p>
-              <SignOutButton />
-            </div>
-          </div>
-        </aside>
-        <section className="min-w-0">{children}</section>
-      </div>
-    </main>
-  );
-}
+    <div className="page min-h-screen text-ink lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]">
+      {/* The shell is divided by a rule, not built from a panel. */}
+      <aside className="rule-b flex flex-col gap-6 py-5 lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r lg:border-rule lg:py-7 lg:pr-6">
+        <div className="flex items-center justify-between gap-3">
+          <p className="flex items-center gap-2.5 text-sm font-semibold tracking-tight text-ink">
+            <BrandIcon className="size-4 shrink-0 text-mood" />
+            SoundShelf
+            <span className="label !text-ink-3">Studio</span>
+          </p>
+          <ThemeToggle className="-mr-2.5 lg:hidden" />
+        </div>
 
-function BrandBlock() {
-  return (
-    <div className="flex items-center gap-3 border-b border-[hsl(var(--border)/0.6)] px-5 py-5">
-      <span
-        aria-hidden="true"
-        className="grid size-10 place-items-center rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2)/0.7)] text-[hsl(var(--accent))] shadow-[0_8px_30px_-12px_hsl(var(--accent)/0.5)]"
-      >
-        <BrandIcon />
-      </span>
-      <div className="min-w-0">
-        <p className="kicker">SoundShelf</p>
-        <p className="display-heading text-lg font-semibold leading-tight">
-          Studio
-        </p>
-      </div>
+        <AdminNav />
+
+        <div className="rule-t hidden pt-4 lg:mt-auto lg:block">
+          <p className="label">Signed in</p>
+          <p
+            className="mt-1 truncate text-sm text-ink"
+            title={adminSession?.email ?? ""}
+          >
+            {adminSession?.email ?? "Admin"}
+          </p>
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <SignOutButton />
+            <ThemeToggle className="-mr-2.5" />
+          </div>
+        </div>
+      </aside>
+
+      <main className="min-w-0 py-8 lg:py-12 lg:pl-10">
+        {children}
+
+        <div className="rule-t mt-12 flex items-center justify-between gap-3 pt-5 lg:hidden">
+          <p className="truncate text-xs text-ink-3">
+            {adminSession?.email ?? "Admin"}
+          </p>
+          <SignOutButton />
+        </div>
+      </main>
     </div>
   );
 }

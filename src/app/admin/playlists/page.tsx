@@ -16,28 +16,19 @@ export default async function AdminPlaylistsPage() {
   const serializedPlaylists = playlists.map(serializeAdminPlaylist);
 
   return (
-    <section className="space-y-8">
-      <header className="space-y-3">
-        <p className="kicker">Playlists</p>
-        <h2 className="display-heading text-3xl font-semibold sm:text-4xl">
-          Playlist management
-        </h2>
-        <p className="max-w-2xl text-sm leading-6 text-[hsl(var(--muted))]">
-          Group songs into playlists. Toggle a playlist to public when it is
-          ready for listeners; hidden playlists stay private.
+    <section>
+      <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+        <h1 className="text-3xl font-semibold tracking-tight">Playlists</h1>
+        <p className="figure text-sm text-ink-3">
+          {serializedPlaylists.length} filed
         </p>
       </header>
+      <p className="mt-2 max-w-prose text-sm text-ink-2">
+        Group tunes into playlists and set the order they play in. A playlist
+        reaches listeners once it is public and holds at least one tune.
+      </p>
 
-      <div className="space-y-4">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h3 className="display-heading text-xl font-semibold">Library</h3>
-            <p className="mt-1 text-sm text-[hsl(var(--muted))]">
-              {serializedPlaylists.length} playlist
-              {serializedPlaylists.length === 1 ? "" : "s"}
-            </p>
-          </div>
-        </div>
+      <div className="mt-8">
         <PlaylistListManager playlists={serializedPlaylists} />
       </div>
     </section>
