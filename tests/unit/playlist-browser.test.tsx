@@ -303,8 +303,9 @@ describe("PlaylistBrowser", () => {
       .getAllByRole("button", { name: /morning/i })
       .find((button) => !button.textContent?.includes("Track"));
     const evening = screen.getByRole("button", { name: /evening/i });
-    expect(morningPlaylist).not.toHaveClass("opacity-60");
-    expect(evening).toHaveClass("opacity-60");
+    expect(morningPlaylist?.querySelector(".text-mood-ink")).not.toBeNull();
+    expect(evening.querySelector(".text-ink-2")).not.toBeNull();
+    expect(evening).not.toHaveClass("opacity-60");
   });
 
   it("clears the previous playlist detail while a newly selected playlist loads", async () => {

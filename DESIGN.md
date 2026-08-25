@@ -317,7 +317,7 @@ The identity device. A 3px × 0.75em `mood` tab, then `SS·XXX` in narrow tabula
 
 ### Register row (signature)
 
-A register-width grid, `text-align: left`, hover `bg-raised` in 140ms. The open Playlist row holds `bg-raised`; its title goes 600 `mood-ink`; unselected stays 500 `ink` and recedes to 60% opacity while another holding is open (hover restores it). Current track title is 500 `ink`; others `ink-2`. Current Position is `mood-ink`. Figures right-align. No chevron, no thumbnail, no card chrome.
+A register-width grid, `text-align: left`, hover `bg-raised` in 140ms. The open Playlist row holds `bg-raised`; its title goes 600 `mood-ink`; unselected stays 500 and recedes to `ink-2` / `ink-3` while another holding is open (hover restores `ink` / `ink-2`). Current track title is 500 `ink`; others `ink-2`. Current Position is `mood-ink`. Figures right-align. No chevron, no thumbnail, no card chrome.
 
 ### Transport (signature)
 

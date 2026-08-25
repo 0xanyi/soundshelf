@@ -249,12 +249,8 @@ function PlaylistRow({
     <button
       type="button"
       aria-current={isSelected ? "true" : undefined}
-      className={`row grid-cols-[1fr_auto] gap-x-4 gap-y-1 px-1 py-3.5 sm:grid-cols-[7.5rem_minmax(0,1fr)_5rem_6.5rem] sm:py-4${
-        isSelected
-          ? " bg-bg-raised"
-          : isReceded
-            ? " opacity-60 hover:opacity-100"
-            : ""
+      className={`group row grid-cols-[1fr_auto] gap-x-4 gap-y-1 px-1 py-3.5 sm:grid-cols-[7.5rem_minmax(0,1fr)_5rem_6.5rem] sm:py-4${
+        isSelected ? " bg-bg-raised" : ""
       }`}
       onClick={onSelect}
     >
@@ -276,24 +272,42 @@ function PlaylistRow({
           </span>
           <span
             className={`truncate text-lg tracking-tight sm:text-xl ${
-              isSelected ? "font-semibold text-mood-ink" : "font-medium text-ink"
+              isSelected
+                ? "font-semibold text-mood-ink"
+                : isReceded
+                  ? "font-medium text-ink-2 group-hover:text-ink"
+                  : "font-medium text-ink"
             }`}
           >
             {playlist.title}
           </span>
         </span>
         {playlist.description ? (
-          <span className="mt-0.5 block max-w-prose truncate text-sm text-ink-2">
+          <span
+            className={`mt-0.5 block max-w-prose truncate text-sm ${
+              isReceded
+                ? "text-ink-3 group-hover:text-ink-2"
+                : "text-ink-2"
+            }`}
+          >
             {playlist.description}
           </span>
         ) : null}
       </span>
 
-      <span className="figure hidden text-right text-sm text-ink-2 sm:block">
+      <span
+        className={`figure hidden text-right text-sm sm:block ${
+          isReceded ? "text-ink-3 group-hover:text-ink-2" : "text-ink-2"
+        }`}
+      >
         {playlist.itemCount}
       </span>
 
-      <span className="figure col-start-2 row-start-1 text-right text-sm text-ink-2 sm:col-start-4">
+      <span
+        className={`figure col-start-2 row-start-1 text-right text-sm sm:col-start-4 ${
+          isReceded ? "text-ink-3 group-hover:text-ink-2" : "text-ink-2"
+        }`}
+      >
         {formatDuration(playlist.durationSeconds)}
       </span>
     </button>
