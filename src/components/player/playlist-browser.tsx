@@ -218,6 +218,9 @@ export function PlaylistBrowser({
 
   const transportOpen = (selectedPlaylist?.tracks.length ?? 0) > 0;
   const canShare = Boolean(selectedPlaylist && selectedPlaylist.tracks.length > 0);
+  const shareButton = canShare ? (
+    <SharePlaylistButton getShareUrl={getCurrentPlaylistShareUrl} />
+  ) : null;
 
   const subtitle = isSharedView
     ? selectedPlaylist
@@ -245,51 +248,46 @@ export function PlaylistBrowser({
       >
         <RegisterHeader subtitle={subtitle} />
 
-        {isSharedView ? (
-          <SharedPlaylist
-            currentIndex={currentIndex}
-            detail={selectedPlaylist}
-            error={detailError}
-            isPlaying={isPlaying}
-            state={detailState}
-            onRetry={() => setDetailReloadKey((key) => key + 1)}
-            onSelectTrack={handleSelectTrack}
-          />
-        ) : (
-          <PlaylistRegister
-            playlists={playlists}
-            selectedPlaylistId={selectedPlaylistId}
-            state={listState}
-            error={listError}
-            onRetry={() => setListReloadKey((key) => key + 1)}
-            onSelect={handleSelectPlaylist}
-            detail={selectedPlaylist}
-            detailState={detailState}
-            detailError={detailError}
-            onRetryDetail={() => setDetailReloadKey((key) => key + 1)}
-            currentIndex={currentIndex}
-            isPlaying={isPlaying}
-            onSelectTrack={handleSelectTrack}
-          />
-        )}
+        <div className="register">
+          {isSharedView ? (
+            <SharedPlaylist
+              currentIndex={currentIndex}
+              detail={selectedPlaylist}
+              error={detailError}
+              isPlaying={isPlaying}
+              share={shareButton}
+              state={detailState}
+              onRetry={() => setDetailReloadKey((key) => key + 1)}
+              onSelectTrack={handleSelectTrack}
+            />
+          ) : (
+            <PlaylistRegister
+              playlists={playlists}
+              selectedPlaylistId={selectedPlaylistId}
+              state={listState}
+              error={listError}
+              onRetry={() => setListReloadKey((key) => key + 1)}
+              onSelect={handleSelectPlaylist}
+              detail={selectedPlaylist}
+              detailState={detailState}
+              detailError={detailError}
+              onRetryDetail={() => setDetailReloadKey((key) => key + 1)}
+              currentIndex={currentIndex}
+              isPlaying={isPlaying}
+              onSelectTrack={handleSelectTrack}
+              share={shareButton}
+            />
+          )}
 
-        {canShare ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 py-6">
-            <p className="text-xs text-ink-3">
-              Sharing {currentPlaylistTitle}
-            </p>
-            <SharePlaylistButton getShareUrl={getCurrentPlaylistShareUrl} />
-          </div>
-        ) : null}
-
-        {/* Close the register, don't dock on the transport. pb-32 lives on
-            the page column so a long shelf still clears the player. */}
-        <footer className="rule-t flex flex-wrap items-center justify-between gap-2 py-6 text-xs text-ink-3">
-          <span>© {new Date().getFullYear()} SoundShelf</span>
-          <span className="figure">
-            Played in the order the curator set it
-          </span>
-        </footer>
+          {/* Close the register, don't dock on the transport. pb-32 lives on
+              the page column so a long shelf still clears the player. */}
+          <footer className="rule-t flex flex-wrap items-center justify-between gap-2 py-6 text-xs text-ink-3">
+            <span>© {new Date().getFullYear()} SoundShelf</span>
+            <span className="figure">
+              Played in the order the curator set it
+            </span>
+          </footer>
+        </div>
       </div>
 
       <AudioPlayer

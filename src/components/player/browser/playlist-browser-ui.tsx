@@ -3,7 +3,7 @@
 import { Check, Link2, RotateCw } from "lucide-react";
 import Link from "next/link";
 import type { Route } from "next";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 import { BrandIcon, LevelIcon } from "@/components/ui/brand-icon";
@@ -13,7 +13,7 @@ import type {
   PublicPlaylistDetail,
   PublicPlaylistSummary,
 } from "@/components/player/browser/types";
-import { cumulativeStarts, formatDuration } from "@/lib/format";
+import { cumulativeStarts, displayTuneTitle, formatDuration } from "@/lib/format";
 import { getMood } from "@/lib/mood";
 import { getShelfmark } from "@/lib/shelfmark";
 
@@ -40,7 +40,7 @@ export function RegisterHeader({
             SoundShelf
           </Link>
         </h1>
-        <p className="figure mt-1.5 text-xs text-ink-3">{subtitle}</p>
+        <p className="figure mt-1.5 text-sm text-ink-2">{subtitle}</p>
       </div>
       <ThemeToggle className="-mr-2.5 shrink-0" />
     </header>
@@ -142,6 +142,7 @@ export function PlaylistRegister({
   currentIndex,
   isPlaying,
   onSelectTrack,
+  share,
 }: {
   playlists: PublicPlaylistSummary[];
   selectedPlaylistId: string | null;
@@ -156,6 +157,7 @@ export function PlaylistRegister({
   currentIndex: number;
   isPlaying: boolean;
   onSelectTrack: (index: number) => void;
+  share?: ReactNode;
 }) {
   if (state === "loading") {
     return <SkeletonRegister />;
@@ -209,6 +211,7 @@ export function PlaylistRegister({
                   currentIndex={currentIndex}
                   isPlaying={isPlaying}
                   onSelectTrack={onSelectTrack}
+                  share={share}
                 />
               ) : null}
             </li>
@@ -243,22 +246,30 @@ function PlaylistRow({
     <button
       type="button"
       aria-current={isSelected ? "true" : undefined}
-      className="row grid-cols-[1fr_auto] gap-x-4 gap-y-1 px-1 py-3.5 sm:grid-cols-[7.5rem_minmax(0,1fr)_5rem_6.5rem] sm:py-4"
+      className={`row grid-cols-[1fr_auto] gap-x-4 gap-y-1 px-1 py-3.5 sm:grid-cols-[7.5rem_minmax(0,1fr)_5rem_6.5rem] sm:py-4${
+        isSelected ? " bg-bg-raised" : ""
+      }`}
       onClick={onSelect}
     >
       <span className="hidden items-center gap-2 sm:flex">
-        <span className="shelf-tab" aria-hidden="true" />
+        <span
+          className={`shelf-tab${isSelected ? " shelf-tab-open" : ""}`}
+          aria-hidden="true"
+        />
         <span className="shelfmark">{getShelfmark(playlist.id)}</span>
       </span>
 
       <span className="col-start-1 row-start-1 min-w-0 sm:col-start-2">
         <span className="flex items-baseline gap-2">
           <span className="sm:hidden">
-            <span className="shelf-tab" aria-hidden="true" />
+            <span
+              className={`shelf-tab${isSelected ? " shelf-tab-open" : ""}`}
+              aria-hidden="true"
+            />
           </span>
           <span
             className={`truncate text-lg tracking-tight sm:text-xl ${
-              isSelected ? "font-semibold text-ink" : "font-medium text-ink"
+              isSelected ? "font-semibold text-mood-ink" : "font-medium text-ink"
             }`}
           >
             {playlist.title}
@@ -295,6 +306,7 @@ function TrackRegister({
   currentIndex,
   isPlaying,
   onSelectTrack,
+  share,
 }: {
   detail: PublicPlaylistDetail | null;
   state: LoadState;
@@ -303,6 +315,7 @@ function TrackRegister({
   currentIndex: number;
   isPlaying: boolean;
   onSelectTrack: (index: number) => void;
+  share?: ReactNode;
 }) {
   if (state === "loading" || (!detail && state !== "error")) {
     return (
@@ -379,7 +392,7 @@ function TrackRegister({
                       isCurrent ? "font-medium text-ink" : "text-ink-2"
                     }`}
                   >
-                    {track.title}
+                    {displayTuneTitle(track.title)}
                   </span>
                   {isCurrent ? (
                     <span className="label flex shrink-0 items-center gap-1.5 text-ink-3">
@@ -401,6 +414,7 @@ function TrackRegister({
           );
         })}
       </ol>
+      {share ? <div className="flex justify-end pt-3">{share}</div> : null}
     </div>
   );
 }
@@ -417,6 +431,7 @@ export function SharedPlaylist({
   currentIndex,
   isPlaying,
   onSelectTrack,
+  share,
 }: {
   detail: PublicPlaylistDetail | null;
   state: LoadState;
@@ -425,6 +440,7 @@ export function SharedPlaylist({
   currentIndex: number;
   isPlaying: boolean;
   onSelectTrack: (index: number) => void;
+  share?: ReactNode;
 }) {
   if (state === "error") {
     return (
@@ -445,18 +461,18 @@ export function SharedPlaylist({
 
   return (
     <div style={getMood(detail.id).cssVars as CSSProperties}>
-      <div className="rule-t grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 px-1 py-3.5 sm:grid-cols-[7.5rem_minmax(0,1fr)_5rem_6.5rem] sm:py-4">
+      <div className="rule-t grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 bg-bg-raised px-1 py-3.5 sm:grid-cols-[7.5rem_minmax(0,1fr)_5rem_6.5rem] sm:py-4">
         <span className="hidden items-center gap-2 sm:flex">
-          <span className="shelf-tab" aria-hidden="true" />
+          <span className="shelf-tab shelf-tab-open" aria-hidden="true" />
           <span className="shelfmark">{getShelfmark(detail.id)}</span>
         </span>
 
         <span className="col-start-1 row-start-1 min-w-0 sm:col-start-2">
           <span className="flex items-baseline gap-2">
             <span className="sm:hidden">
-              <span className="shelf-tab" aria-hidden="true" />
+              <span className="shelf-tab shelf-tab-open" aria-hidden="true" />
             </span>
-            <span className="truncate text-lg font-semibold tracking-tight text-ink sm:text-xl">
+            <span className="truncate text-lg font-semibold tracking-tight text-mood-ink sm:text-xl">
               {detail.title}
             </span>
           </span>
@@ -481,6 +497,7 @@ export function SharedPlaylist({
         detail={detail}
         error={error}
         isPlaying={isPlaying}
+        share={share}
         state={state}
         onRetry={onRetry}
         onSelectTrack={onSelectTrack}

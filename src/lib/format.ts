@@ -102,3 +102,26 @@ export function cumulativeStarts(durations: number[]): number[] {
 
   return starts;
 }
+
+const AUDIO_EXTENSION_PATTERN = /\.(?:aac|flac|m4a|mp3|ogg|wav|webm)$/i;
+
+/**
+ * Listener-facing Tune title. Upload often stores the filename stem; this
+ * strips a known audio extension and turns kebab/snake stems into words.
+ * Titles that already contain a space are left alone so a curator name is
+ * never rewritten.
+ */
+export function displayTuneTitle(title: string): string {
+  const stem = title.trim().replace(AUDIO_EXTENSION_PATTERN, "").trim();
+
+  if (stem.length === 0) {
+    return "Untitled tune";
+  }
+
+  if (/\s/.test(stem)) {
+    return stem;
+  }
+
+  const humanized = stem.replace(/[_-]+/g, " ").trim();
+  return humanized || "Untitled tune";
+}

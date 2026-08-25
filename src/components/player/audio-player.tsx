@@ -14,7 +14,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getNextTrackIndex, type RepeatMode } from "@/lib/playlist/playback";
-import { formatDuration } from "@/lib/format";
+import { displayTuneTitle, formatDuration } from "@/lib/format";
 import { getShelfmark } from "@/lib/shelfmark";
 import { LevelIcon } from "@/components/ui/brand-icon";
 
@@ -309,7 +309,7 @@ export function AudioPlayer({
             {position}
           </span>
           <h2 className="min-w-0 truncate text-sm font-medium text-ink">
-            {currentTrack.title}
+            {displayTuneTitle(currentTrack.title)}
           </h2>
           {playlistTitle ? (
             <span className="hidden min-w-0 shrink truncate text-xs text-ink-3 xl:inline">

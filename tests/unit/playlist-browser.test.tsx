@@ -109,6 +109,59 @@ describe("PlaylistBrowser", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("renders filename stems as listener titles", async () => {
+    vi.stubGlobal("fetch", (input: RequestInfo | URL) => {
+      const url = input.toString();
+
+      if (url === "/api/public/playlists") {
+        return Promise.resolve(
+          jsonResponse({
+            playlists: [
+              {
+                id: "playlist-spirit",
+                title: "Praying in the Spirit",
+                description: null,
+                itemCount: 1,
+                durationSeconds: 90,
+              },
+            ],
+          }),
+        );
+      }
+
+      if (url === "/api/public/playlists/playlist-spirit") {
+        return Promise.resolve(
+          jsonResponse({
+            id: "playlist-spirit",
+            title: "Praying in the Spirit",
+            description: null,
+            itemCount: 1,
+            durationSeconds: 90,
+            tracks: [
+              {
+                id: "track-raw",
+                playlistItemId: "item-raw",
+                title: "1hr-052601.mp3",
+                durationSeconds: 90,
+                audioUrl: "https://audio.example.test/raw.mp3",
+              },
+            ],
+          }),
+        );
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    render(<PlaylistBrowser />);
+
+    expect(
+      await screen.findByRole("heading", { name: "1hr 052601" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("1hr 052601").length).toBeGreaterThan(1);
+    expect(screen.queryByText("1hr-052601.mp3")).not.toBeInTheDocument();
+  });
+
   it("does not offer sharing when the shelf is empty", async () => {
     vi.stubGlobal("fetch", (input: RequestInfo | URL) => {
       if (input.toString() === "/api/public/playlists") {
@@ -182,6 +235,7 @@ describe("PlaylistBrowser", () => {
 
     await screen.findAllByText("Morning Track");
 
+    expect(screen.queryByText(/sharing morning/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /share playlist/i }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
