@@ -416,7 +416,9 @@
     align-items: center;
     width: 100%;
     text-align: left;
-    transition: background-color 140ms ease-out;
+    transition:
+      background-color 140ms ease-out,
+      opacity 140ms ease-out;
   }
 
   .row:hover {

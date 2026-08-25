@@ -199,6 +199,7 @@ export function PlaylistRegister({
               <PlaylistRow
                 playlist={playlist}
                 isSelected={isSelected}
+                isReceded={Boolean(selectedPlaylistId) && !isSelected}
                 onSelect={() => onSelect(playlist.id)}
               />
 
@@ -236,10 +237,12 @@ function ColumnHeads() {
 function PlaylistRow({
   playlist,
   isSelected,
+  isReceded,
   onSelect,
 }: {
   playlist: PublicPlaylistSummary;
   isSelected: boolean;
+  isReceded: boolean;
   onSelect: () => void;
 }) {
   return (
@@ -247,7 +250,11 @@ function PlaylistRow({
       type="button"
       aria-current={isSelected ? "true" : undefined}
       className={`row grid-cols-[1fr_auto] gap-x-4 gap-y-1 px-1 py-3.5 sm:grid-cols-[7.5rem_minmax(0,1fr)_5rem_6.5rem] sm:py-4${
-        isSelected ? " bg-bg-raised" : ""
+        isSelected
+          ? " bg-bg-raised"
+          : isReceded
+            ? " opacity-60 hover:opacity-100"
+            : ""
       }`}
       onClick={onSelect}
     >
