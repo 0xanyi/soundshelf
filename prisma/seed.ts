@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { createLocalAccountIssuer } from "better-auth";
 import { hashPassword } from "better-auth/crypto";
 
 const requiredEnv = [
@@ -13,6 +14,11 @@ const requiredEnv = [
   "ADMIN_NAME",
 ] as const;
 const credentialProviderId = "credential";
+// Better Auth synthesizes this issuer for providers that have none of their
+// own, and requires it to match when resolving a credential account at
+// sign-in. Imported from Better Auth rather than hardcoded so the seeded row
+// cannot drift from whatever the installed version expects.
+const credentialIssuer = createLocalAccountIssuer(credentialProviderId);
 
 const getRequiredEnv = () => {
   const missing = requiredEnv.filter((key) => !process.env[key]?.trim());
@@ -74,6 +80,21 @@ async function main() {
     });
 
     if (existingCredentialAccount) {
+      // The issuer is asserted for the same reason as the role above: an
+      // account created before Better Auth required it would still be present
+      // but unable to sign in, and a silent 401 is a hard thing to trace back
+      // to a missing column.
+      if (existingCredentialAccount.issuer !== credentialIssuer) {
+        await db.account.update({
+          where: { id: existingCredentialAccount.id },
+          data: { issuer: credentialIssuer },
+        });
+        console.info(
+          `Admin user ${env.email} already has a credential account; repaired issuer and ensured role=admin.`
+        );
+        return;
+      }
+
       console.info(
         `Admin user ${env.email} already has a credential account; ensured role=admin.`
       );
@@ -88,6 +109,7 @@ async function main() {
         userId: user.id,
         accountId: user.id,
         providerId: credentialProviderId,
+        issuer: credentialIssuer,
         password: passwordHash,
       },
     });
