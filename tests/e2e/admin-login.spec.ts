@@ -6,6 +6,10 @@ import {
   WRONG_PASSWORD,
 } from "./auth-fixtures";
 
+/** /admin immediately redirects to /admin/tunes, so that is where a sign-in lands. */
+const ADMIN_LANDING = /\/admin\/tunes$/;
+const LOGIN_PAGE = /\/admin\/login$/;
+
 /**
  * Real credential sign-in against a seeded Postgres. The rest of the E2E suite
  * mocks the API boundary, but sign-in is precisely the flow that cannot be
@@ -16,7 +20,7 @@ test.describe("admin credential login", () => {
   test("signs a seeded admin in and opens the admin area", async ({ page }) => {
     await signIn(page, ADMIN_USER.email, ADMIN_USER.password);
 
-    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page).toHaveURL(ADMIN_LANDING);
     // The sidebar renders the email resolved from the session, so this asserts
     // the session identifies the seeded admin rather than merely existing.
     await expect(page.getByText(ADMIN_USER.email)).toBeVisible();
@@ -24,7 +28,7 @@ test.describe("admin credential login", () => {
 
   test("issues a session cookie that survives a reload", async ({ page }) => {
     await signIn(page, ADMIN_USER.email, ADMIN_USER.password);
-    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page).toHaveURL(ADMIN_LANDING);
 
     const sessionCookie = await findSessionCookie(page);
     expect(sessionCookie, "expected Better Auth to set a session cookie").toBeDefined();
@@ -35,20 +39,20 @@ test.describe("admin credential login", () => {
     // A fresh navigation proves the session was persisted server-side rather
     // than only held in the client that performed the sign-in.
     await page.goto("/admin");
-    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page).toHaveURL(ADMIN_LANDING);
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeHidden();
   });
 
   test("keeps a wrong password out and issues no session", async ({ page }) => {
     await signIn(page, ADMIN_USER.email, WRONG_PASSWORD);
 
-    await expect(page).toHaveURL(/\/admin\/login$/);
+    await expect(page).toHaveURL(LOGIN_PAGE);
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
     expect(await findSessionCookie(page)).toBeUndefined();
 
     // The admin area must still be closed, not merely un-navigated-to.
     await page.goto("/admin/playlists");
-    await expect(page).toHaveURL(/\/admin\/login$/);
+    await expect(page).toHaveURL(LOGIN_PAGE);
   });
 
   test("refuses the admin area to a valid non-admin account", async ({ page }) => {
@@ -62,22 +66,29 @@ test.describe("admin credential login", () => {
     expect(await findSessionCookie(page)).toBeDefined();
 
     await page.goto("/admin/playlists");
-    await expect(page).toHaveURL(/\/admin\/login$/);
+    await expect(page).toHaveURL(LOGIN_PAGE);
   });
 
   test("signing out revokes access to the admin area", async ({ page }) => {
     await signIn(page, ADMIN_USER.email, ADMIN_USER.password);
-    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page).toHaveURL(ADMIN_LANDING);
 
     // For an admin the sign-out control lives in the /admin sidebar; the login
     // page only offers one to a signed-in non-admin.
-    await page.getByRole("button", { name: /Sign out/ }).click();
+    const signOut = page.getByRole("button", { name: /Sign out/ });
 
-    await expect(page).toHaveURL(/\/admin\/login$/);
+    // The button is a client component and renders enabled in the server HTML,
+    // so it looks clickable before its handler is attached and an early click
+    // is silently dropped. Retrying the click is what makes this deterministic;
+    // asserting "enabled" is not, because it is already true pre-hydration.
+    await expect(async () => {
+      await signOut.click();
+      await page.waitForURL(LOGIN_PAGE, { timeout: 3_000 });
+    }).toPass({ timeout: 30_000 });
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 
     await page.goto("/admin/playlists");
-    await expect(page).toHaveURL(/\/admin\/login$/);
+    await expect(page).toHaveURL(LOGIN_PAGE);
   });
 });
 

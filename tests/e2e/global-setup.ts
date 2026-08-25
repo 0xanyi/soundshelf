@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { createLocalAccountIssuer } from "better-auth";
 import { hashPassword } from "better-auth/crypto";
 
 import {
@@ -12,6 +13,9 @@ import {
 import { ADMIN_USER, NON_ADMIN_USER, e2eDatabaseUrl } from "./auth-fixtures";
 
 const CREDENTIAL_PROVIDER_ID = "credential";
+// Taken from Better Auth itself, exactly as prisma/seed.ts does, so the seeded
+// row matches whatever the installed version expects at sign-in.
+const CREDENTIAL_ISSUER = createLocalAccountIssuer(CREDENTIAL_PROVIDER_ID);
 
 type SeedUser = {
   email: string;
@@ -77,7 +81,7 @@ async function seedUser(db: PrismaClient, seed: SeedUser): Promise<void> {
   if (existing) {
     await db.account.update({
       where: { id: existing.id },
-      data: { password: passwordHash },
+      data: { issuer: CREDENTIAL_ISSUER, password: passwordHash },
     });
     return;
   }
@@ -88,6 +92,7 @@ async function seedUser(db: PrismaClient, seed: SeedUser): Promise<void> {
       userId: user.id,
       accountId: user.id,
       providerId: CREDENTIAL_PROVIDER_ID,
+      issuer: CREDENTIAL_ISSUER,
       password: passwordHash,
     },
   });
