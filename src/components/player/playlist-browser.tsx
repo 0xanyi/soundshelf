@@ -240,7 +240,9 @@ export function PlaylistBrowser({
       className="flex min-h-screen flex-col text-ink"
       style={mood.cssVars as CSSProperties}
     >
-      <div className="page flex flex-1 flex-col">
+      <div
+        className={`page flex flex-1 flex-col ${transportOpen ? "pb-32" : ""}`}
+      >
         <RegisterHeader subtitle={subtitle} />
 
         {isSharedView ? (
@@ -280,14 +282,9 @@ export function PlaylistBrowser({
           </div>
         ) : null}
 
-        {/* Sit on the viewport floor when the register is short. pb-32 only
-            when the transport is actually mounted, so an empty shelf is not
-            padded for a bar that is not there. */}
-        <footer
-          className={`rule-t mt-auto flex flex-wrap items-center justify-between gap-2 py-6 text-xs text-ink-3 ${
-            transportOpen ? "pb-32" : ""
-          }`}
-        >
+        {/* Close the register, don't dock on the transport. pb-32 lives on
+            the page column so a long shelf still clears the player. */}
+        <footer className="rule-t flex flex-wrap items-center justify-between gap-2 py-6 text-xs text-ink-3">
           <span>© {new Date().getFullYear()} SoundShelf</span>
           <span className="figure">
             Played in the order the curator set it
