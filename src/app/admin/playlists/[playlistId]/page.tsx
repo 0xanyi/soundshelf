@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { CSSProperties } from "react";
 
 import { PlaylistEditor } from "@/components/admin/playlist-editor";
 import { db } from "@/lib/db";
@@ -6,6 +7,8 @@ import {
   serializeAdminPlaylist,
   serializeAdminPlaylistItem,
 } from "@/lib/playlists/admin";
+import { getMood } from "@/lib/mood";
+import { getShelfmark } from "@/lib/shelfmark";
 
 export const dynamic = "force-dynamic";
 
@@ -55,22 +58,24 @@ export default async function AdminPlaylistEditorPage({
   }
 
   return (
-    <section className="space-y-8">
-      <header className="space-y-3">
-        <p className="kicker">Playlist</p>
-        <h2 className="display-heading text-3xl font-semibold sm:text-4xl">
+    <section style={getMood(playlist.id).cssVars as CSSProperties}>
+      <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+        <h1 className="text-3xl font-semibold tracking-tight">
           {playlist.title}
-        </h2>
-        <p className="max-w-2xl text-sm leading-6 text-[hsl(var(--muted))]">
-          Edit playlist details, add songs, and adjust playback order.
-        </p>
+        </h1>
+        <span className="flex items-center gap-2">
+          <span className="shelf-tab" aria-hidden="true" />
+          <span className="shelfmark">{getShelfmark(playlist.id)}</span>
+        </span>
       </header>
 
-      <PlaylistEditor
-        items={playlist.items.map(serializeAdminPlaylistItem)}
-        playlist={serializeAdminPlaylist(playlist)}
-        tunes={tunes}
-      />
+      <div className="mt-8">
+        <PlaylistEditor
+          items={playlist.items.map(serializeAdminPlaylistItem)}
+          playlist={serializeAdminPlaylist(playlist)}
+          tunes={tunes}
+        />
+      </div>
     </section>
   );
 }

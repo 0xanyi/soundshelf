@@ -1,11 +1,12 @@
 import type { SVGProps } from "react";
 
 /**
- * Brand mark — a stylised vinyl with a sound wave passing through it.
- * Refined enough to read at 16px, distinctive enough to feel like a logo.
+ * Brand mark — the register itself: a shelf tab and three filed rules.
+ * Drawn from the design system's own two materials rather than depicting a
+ * record, so it reads at 16px and stays true when the hue changes.
  */
 export function BrandIcon({
-  className = "size-5",
+  className = "size-4",
   ...props
 }: SVGProps<SVGSVGElement>) {
   return (
@@ -13,30 +14,28 @@ export function BrandIcon({
       viewBox="0 0 24 24"
       className={className}
       fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      aria-hidden="true"
       {...props}
     >
-      <circle cx="12" cy="12" r="9" strokeWidth={1.25} opacity={0.55} />
-      <circle cx="12" cy="12" r="5" strokeWidth={1.25} opacity={0.75} />
-      <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      <rect x="3" y="4" width="2.5" height="16" rx="0.5" fill="currentColor" />
       <path
-        d="M3 12h2.5M7 9.5v5M9.5 7v10M12 4v16M14.5 7v10M17 9.5v5M19.5 12H22"
-        strokeWidth={1.6}
-        opacity={0}
+        d="M9 7.25h12M9 12h8.5M9 16.75h10.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="square"
       />
     </svg>
   );
 }
 
 /**
- * Animated equalizer — three bars that pulse while playing.
- * Used as the live "now playing" indicator.
+ * Playing indicator — three bars reading level. Sized in `em` so it sits on
+ * the baseline of whatever label it accompanies. Always paired with a state
+ * word: this is a second signal, never the only one.
  */
-export function EqualizerIcon({
+export function LevelIcon({
   isPlaying = true,
-  className = "size-4",
+  className = "",
 }: {
   isPlaying?: boolean;
   className?: string;
@@ -44,25 +43,14 @@ export function EqualizerIcon({
   return (
     <span
       aria-hidden="true"
-      className={`inline-flex items-end gap-[2px] ${className}`}
-      style={{ height: "1em" }}
+      className={`inline-flex items-end gap-[2px] ${
+        isPlaying ? "" : "level-paused"
+      } ${className}`.trim()}
+      style={{ height: "0.7em" }}
     >
-      <span
-        className={`eq-bar ${isPlaying ? "" : "eq-paused"}`}
-        style={{ animationDelay: "0ms", background: "currentColor" }}
-      />
-      <span
-        className={`eq-bar ${isPlaying ? "" : "eq-paused"}`}
-        style={{ animationDelay: "180ms", background: "currentColor" }}
-      />
-      <span
-        className={`eq-bar ${isPlaying ? "" : "eq-paused"}`}
-        style={{ animationDelay: "360ms", background: "currentColor" }}
-      />
-      <span
-        className={`eq-bar ${isPlaying ? "" : "eq-paused"}`}
-        style={{ animationDelay: "120ms", background: "currentColor" }}
-      />
+      <span className="level-bar" style={{ animationDelay: "0ms" }} />
+      <span className="level-bar" style={{ animationDelay: "220ms" }} />
+      <span className="level-bar" style={{ animationDelay: "110ms" }} />
     </span>
   );
 }

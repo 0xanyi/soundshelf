@@ -24,13 +24,13 @@ export function SignOutButton() {
 
   return (
     <button
-      className="btn-secondary mt-3 w-full"
+      className="control -ml-2.5"
       disabled={isPending}
       onClick={() => void handleSignOut()}
       type="button"
     >
-      <LogOut aria-hidden="true" size={16} />
-      {isPending ? "Signing out..." : "Sign out"}
+      <LogOut aria-hidden="true" size={14} />
+      {isPending ? "Signing out…" : "Sign out"}
     </button>
   );
 }

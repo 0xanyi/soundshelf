@@ -32,30 +32,23 @@ export default async function AdminTunesPage() {
   const serializedTunes = tunes.map(serializeAdminTune);
 
   return (
-    <section className="space-y-8">
-      <header className="space-y-3">
-        <p className="kicker">Songs</p>
-        <h2 className="display-heading text-3xl font-semibold sm:text-4xl">
-          Song library
-        </h2>
-        <p className="max-w-2xl text-sm leading-6 text-[hsl(var(--muted))]">
-          Upload audio, rename songs, and add them to playlists. Uploads go live
-          immediately.
+    <section>
+      <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+        <h1 className="text-3xl font-semibold tracking-tight">Tunes</h1>
+        <p className="figure text-sm text-ink-3">
+          {serializedTunes.length} accessioned
         </p>
       </header>
+      <p className="mt-2 max-w-prose text-sm text-ink-2">
+        Upload audio, rename tunes, and file them onto playlists. An upload is
+        live as soon as it lands.
+      </p>
 
-      <TuneUploadForm maxUploadBytes={getMaxAudioUploadBytes()} />
+      <div className="mt-8">
+        <TuneUploadForm maxUploadBytes={getMaxAudioUploadBytes()} />
+      </div>
 
-      <div className="space-y-4">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h3 className="display-heading text-xl font-semibold">Library</h3>
-            <p className="mt-1 text-sm text-[hsl(var(--muted))]">
-              {serializedTunes.length} song
-              {serializedTunes.length === 1 ? "" : "s"}
-            </p>
-          </div>
-        </div>
+      <div className="mt-10">
         <TuneManagementTable playlists={playlists} tunes={serializedTunes} />
       </div>
     </section>

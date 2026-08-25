@@ -1,6 +1,6 @@
 "use client";
 
-import { Music2, Save, Trash2, X } from "lucide-react";
+import { Save, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
@@ -34,18 +34,12 @@ export function TuneManagementTable({
 
   if (tunes.length === 0) {
     return (
-      <div className="panel-quiet grid place-items-center gap-3 p-10 text-center">
-        <span className="grid size-12 place-items-center rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--surface-2)/0.7)] text-[hsl(var(--accent))]">
-          <Music2 size={20} aria-hidden="true" />
-        </span>
-        <div>
-          <h3 className="display-heading text-lg font-semibold">
-            No songs uploaded yet
-          </h3>
-          <p className="mt-1 text-sm text-[hsl(var(--muted))]">
-            Uploaded files appear here and go live immediately.
-          </p>
-        </div>
+      <div className="rule-t rule-b py-14 text-center">
+        <p className="text-lg font-medium text-ink">Nothing accessioned yet</p>
+        <p className="mx-auto mt-2 max-w-sm text-sm text-ink-2">
+          Upload an audio file above. It lands in this register straight away,
+          and you can file it onto a playlist from here.
+        </p>
       </div>
     );
   }
@@ -85,10 +79,10 @@ export function TuneManagementTable({
         throw new Error(await readError(response));
       }
 
-      setMessage("Song saved.");
+      setMessage("Tune saved.");
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Song could not be saved.");
+      setMessage(error instanceof Error ? error.message : "Tune could not be saved.");
     } finally {
       setPendingTuneId(null);
     }
@@ -96,7 +90,7 @@ export function TuneManagementTable({
 
   async function deleteTune(tune: SerializedAdminTune) {
     if (!tune.canDelete) {
-      setMessage("Song is in a playlist. Remove it first to delete.");
+      setMessage("This tune is on a playlist. Take it off first to delete it.");
       return;
     }
 
@@ -113,14 +107,14 @@ export function TuneManagementTable({
       }
 
       if (response.status === 204) {
-        setMessage("Song deleted.");
+        setMessage("Tune deleted.");
       } else {
         const warning = await readWarning(response);
-        setMessage(warning ?? "Song deleted, but storage cleanup needs attention.");
+        setMessage(warning ?? "Tune deleted, but storage cleanup needs attention.");
       }
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Song could not be deleted.");
+      setMessage(error instanceof Error ? error.message : "Tune could not be deleted.");
     } finally {
       setPendingTuneId(null);
     }
@@ -181,7 +175,7 @@ export function TuneManagementTable({
       }
 
       setMessage(
-        `Added ${selectedIds.size} song${selectedIds.size === 1 ? "" : "s"} to ${playlistIds.length} playlist${playlistIds.length === 1 ? "" : "s"}.`,
+        `Added ${selectedIds.size} tune${selectedIds.size === 1 ? "" : "s"} to ${playlistIds.length} playlist${playlistIds.length === 1 ? "" : "s"}.`,
       );
       setSelectedIds(new Set());
       router.refresh();
@@ -197,28 +191,29 @@ export function TuneManagementTable({
   }
 
   return (
-    <div className="space-y-3">
+    <div>
       {message ? (
-        <p className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface)/0.7)] px-3 py-2 text-sm text-[hsl(var(--muted))]">
+        <p className="pb-3 text-sm text-ink-2" role="status">
           {message}
         </p>
       ) : null}
 
+      {/* Selection is a state of the register, announced on its own line
+          rather than in a floating bar that covers the rows it acts on. */}
       {someSelected ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[hsl(var(--mood)/0.4)] bg-[hsl(var(--mood)/0.08)] px-4 py-2.5">
-          <div className="flex items-center gap-3">
+        <div className="rule-t flex flex-wrap items-center justify-between gap-3 py-2.5">
+          <p className="flex items-center gap-2 text-sm text-ink">
             <button
               aria-label="Clear selection"
-              className="btn-ghost-icon"
+              className="control control-icon -ml-2 size-7"
               onClick={() => setSelectedIds(new Set())}
               type="button"
             >
-              <X aria-hidden="true" size={14} />
+              <X aria-hidden="true" size={13} />
             </button>
-            <p className="text-sm font-medium">
-              {selectedIds.size} song{selectedIds.size === 1 ? "" : "s"} selected
-            </p>
-          </div>
+            <span className="figure">{selectedIds.size}</span>
+            tune{selectedIds.size === 1 ? "" : "s"} selected
+          </p>
           <AddToPlaylistPopover
             disabled={isBulkPending}
             initialSelectedIds={[]}
@@ -231,51 +226,53 @@ export function TuneManagementTable({
         </div>
       ) : null}
 
-      <div className="panel-quiet overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-[hsl(var(--border)/0.5)] text-left text-sm">
-            <thead className="text-[11px] uppercase tracking-[0.18em] text-[hsl(var(--muted))]">
-              <tr className="bg-[hsl(var(--surface-2)/0.4)]">
-                <th className="w-10 px-5 py-3">
-                  <label className="sr-only" htmlFor="select-all">
-                    Select all
-                  </label>
-                  <input
-                    checked={allSelected}
-                    id="select-all"
-                    onChange={toggleSelectAll}
-                    type="checkbox"
-                  />
-                </th>
-                <th className="px-5 py-3 font-semibold">Song</th>
-                <th className="px-5 py-3 font-semibold">Playlists</th>
-                <th className="px-5 py-3 font-semibold">File</th>
-                <th className="px-5 py-3 font-semibold">Created</th>
-                <th className="px-5 py-3 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[hsl(var(--border)/0.4)]">
-              {tunes.map((tune) => {
-                const isPending = pendingTuneId === tune.id;
-                const isSelected = selectedIds.has(tune.id);
+      <div className="md:overflow-x-auto">
+        <table className="w-full border-collapse text-left">
+          <thead className="hidden md:table-header-group">
+            <tr className="rule-b">
+              <th className="w-8 pb-2 pr-3 align-bottom">
+                <label className="sr-only" htmlFor="select-all">
+                  Select all
+                </label>
+                <input
+                  checked={allSelected}
+                  id="select-all"
+                  onChange={toggleSelectAll}
+                  type="checkbox"
+                />
+              </th>
+              <th className="label pb-2 pr-4 align-bottom font-medium">Tune</th>
+              <th className="label pb-2 pr-4 align-bottom font-medium">
+                On playlists
+              </th>
+              <th className="label pb-2 pr-4 align-bottom font-medium">File</th>
+              <th className="label pb-2 pr-4 align-bottom font-medium">Added</th>
+              <th className="label pb-2 align-bottom text-right font-medium">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {tunes.map((tune) => {
+              const isPending = pendingTuneId === tune.id;
+              const isSelected = selectedIds.has(tune.id);
 
-                return (
-                  <TuneTableRow
-                    isPending={isPending}
-                    isSelected={isSelected}
-                    key={tune.id}
-                    onApplyPlaylists={(ids) => syncPlaylists(tune.id, ids)}
-                    onDelete={deleteTune}
-                    onSave={saveTitle}
-                    onToggleSelect={() => toggleSelect(tune.id)}
-                    playlists={playlists}
-                    tune={tune}
-                  />
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+              return (
+                <TuneTableRow
+                  isPending={isPending}
+                  isSelected={isSelected}
+                  key={tune.id}
+                  onApplyPlaylists={(ids) => syncPlaylists(tune.id, ids)}
+                  onDelete={deleteTune}
+                  onSave={saveTitle}
+                  onToggleSelect={() => toggleSelect(tune.id)}
+                  playlists={playlists}
+                  tune={tune}
+                />
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -317,10 +314,10 @@ function TuneTableRow({
   );
 
   return (
-    <tr className="align-top">
-      <td className="px-5 py-4">
+    <tr className="rule-b align-middle max-md:grid max-md:grid-cols-[auto_minmax(0,1fr)_auto] max-md:items-start max-md:gap-x-2 max-md:gap-y-1 max-md:py-3 md:table-row">
+      <td className="py-2.5 pr-3 max-md:row-span-2 max-md:py-1">
         <label className="sr-only" htmlFor={`select-${tune.id}`}>
-          Select song
+          Select tune
         </label>
         <input
           checked={isSelected}
@@ -329,26 +326,28 @@ function TuneTableRow({
           type="checkbox"
         />
       </td>
-      <td className="min-w-72 px-5 py-4">
+
+      <td className="min-w-0 py-2.5 pr-4 md:min-w-64">
         <label className="sr-only" htmlFor={`title-${tune.id}`}>
           Title
         </label>
         <input
-          className="field font-medium"
+          className="field !border-transparent hover:!border-rule focus:!border-mood"
           disabled={isPending}
           id={`title-${tune.id}`}
           onChange={(event) => setTitle(event.target.value)}
           value={title}
         />
       </td>
-      <td className="min-w-48 px-5 py-4">
+
+      <td className="min-w-0 py-2.5 pr-4 text-sm max-md:col-start-2 max-md:py-0">
         {tune.playlists.length === 0 ? (
-          <span className="text-xs text-[hsl(var(--muted))]">—</span>
+          <span className="text-ink-3">—</span>
         ) : (
-          <div className="flex flex-wrap gap-1.5">
+          <span className="flex flex-wrap gap-x-2 gap-y-0.5">
             {tune.playlists.map((playlist) => (
               <Link
-                className="pill hover:border-[hsl(var(--mood)/0.5)] hover:text-foreground"
+                className="text-ink-2 underline decoration-rule-strong hover:text-mood-ink hover:decoration-current"
                 href={`/admin/playlists/${playlist.id}` as Route}
                 key={playlist.id}
                 title={`Open ${playlist.title}`}
@@ -356,21 +355,24 @@ function TuneTableRow({
                 {playlist.title}
               </Link>
             ))}
-          </div>
+          </span>
         )}
       </td>
-      <td className="min-w-44 px-5 py-4 text-[hsl(var(--muted))]">
-        <div className="font-mono text-xs">{tune.mimeType}</div>
-        <div className="text-xs">{formatBytes(tune.fileSizeBytes)}</div>
-        <div className="font-mono text-xs">
-          {formatDuration(tune.durationSeconds, { fallback: "—:—" })}
-        </div>
+
+      <td className="figure hidden py-2.5 pr-4 text-xs text-ink-3 md:table-cell md:min-w-40">
+        <span className="block">
+          {formatDuration(tune.durationSeconds, { fallback: "—:—" })} ·{" "}
+          {formatBytes(tune.fileSizeBytes)}
+        </span>
+        <span className="block truncate">{tune.mimeType}</span>
       </td>
-      <td className="min-w-36 px-5 py-4 text-xs text-[hsl(var(--muted))]">
+
+      <td className="figure hidden py-2.5 pr-4 text-xs text-ink-3 md:table-cell md:min-w-36">
         {formatDate(tune.createdAt)}
       </td>
-      <td className="px-5 py-4">
-        <div className="flex gap-2">
+
+      <td className="py-2.5 max-md:col-start-3 max-md:row-span-2 max-md:row-start-1 max-md:py-1">
+        <div className="flex items-center justify-end gap-0.5">
           <AddToPlaylistPopover
             disabled={isPending}
             initialSelectedIds={memberPlaylistIds}
@@ -380,27 +382,27 @@ function TuneTableRow({
           />
           <button
             aria-label={`Save ${tune.title}`}
-            className="btn-ghost-icon"
+            className="control control-icon"
             disabled={isPending || !isDirty || title.trim() === ""}
             onClick={() => void onSave(tune.id, title.trim())}
             title="Rename"
             type="button"
           >
-            <Save aria-hidden="true" size={16} />
+            <Save aria-hidden="true" size={15} />
           </button>
           <button
             aria-label={`Delete ${tune.title}`}
-            className="btn-danger-icon"
+            className="control control-icon control-danger"
             disabled={isPending || !tune.canDelete}
             onClick={() => void onDelete(tune)}
             title={
               tune.canDelete
-                ? "Delete song"
-                : "Song is in a playlist. Remove it first to delete."
+                ? "Delete tune"
+                : "This tune is on a playlist. Take it off first to delete it."
             }
             type="button"
           >
-            <Trash2 aria-hidden="true" size={16} />
+            <Trash2 aria-hidden="true" size={15} />
           </button>
         </div>
       </td>

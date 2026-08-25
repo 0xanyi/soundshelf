@@ -27,10 +27,18 @@ export function formatDuration(
     return fallback;
   }
 
-  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
   const remainingSeconds = Math.floor(seconds % 60);
+  const paddedSeconds = remainingSeconds.toString().padStart(2, "0");
 
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  // A playlist's running time regularly passes an hour, and "91:24" reads as
+  // ninety-one minutes only if you stop to work it out.
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${paddedSeconds}`;
+  }
+
+  return `${minutes}:${paddedSeconds}`;
 }
 
 export function formatTotalDuration(seconds: number): string {
@@ -76,4 +84,21 @@ export function formatDate(value: string | Date): string {
     timeStyle: "short",
     timeZone: "UTC",
   }).format(typeof value === "string" ? new Date(value) : value);
+}
+
+/**
+ * Start offsets for an ordered run of durations: the point at which each
+ * entry begins, measured from the start of the sequence. This is what the
+ * register's STARTS column reports, on both the listener and curator sides.
+ */
+export function cumulativeStarts(durations: number[]): number[] {
+  const starts: number[] = [];
+  let elapsed = 0;
+
+  for (const duration of durations) {
+    starts.push(elapsed);
+    elapsed += safeDuration(duration);
+  }
+
+  return starts;
 }

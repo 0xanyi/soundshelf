@@ -1,10 +1,12 @@
 import { headers } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Route } from "next";
 
 import { LoginForm } from "@/components/admin/login-form";
 import { SignOutButton } from "@/components/admin/sign-out-button";
 import { BrandIcon } from "@/components/ui/brand-icon";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { auth } from "@/lib/auth";
 import { requireAdminSession } from "@/lib/http/errors";
 
@@ -24,49 +26,42 @@ export default async function AdminLoginPage() {
   const isSignedInWithoutAdminAccess = Boolean(session);
 
   return (
-    <main className="relative grid min-h-screen place-items-center px-4 py-12 text-foreground sm:px-6">
-      <div className="relative w-full max-w-md">
-        <div className="panel relative overflow-hidden p-8 sm:p-10">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-32 right-0 size-64 rounded-full bg-[hsl(var(--mood-2)/0.22)] blur-3xl"
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -bottom-32 -left-12 size-72 rounded-full bg-[hsl(var(--mood)/0.18)] blur-3xl"
-          />
+    <main className="flex min-h-screen flex-col text-ink">
+      <div className="page flex flex-1 flex-col">
+        <header className="flex items-start justify-between gap-4 py-7 lg:py-10">
+          <p className="flex items-center gap-2.5 text-lg font-semibold tracking-tight text-ink">
+            <Link
+              aria-label="SoundShelf home"
+              className="flex items-center gap-2.5 text-ink no-underline"
+              href={"/" as Route}
+            >
+              <BrandIcon className="size-[18px] shrink-0 text-mood" />
+              SoundShelf
+            </Link>
+            <span className="label !text-ink-3">Studio</span>
+          </p>
+          <ThemeToggle className="-mr-2.5 shrink-0" />
+        </header>
 
-          <div className="relative">
-            <div className="flex items-center gap-3">
-              <span
-                aria-hidden="true"
-                className="grid size-10 place-items-center rounded-2xl border border-[hsl(var(--mood)/0.35)] bg-[hsl(var(--surface-2)/0.7)] text-[hsl(var(--mood))]"
-              >
-                <BrandIcon />
-              </span>
-              <div>
-                <p className="kicker">SoundShelf</p>
-                <p className="display-heading text-base font-semibold">
-                  Studio Access
-                </p>
-              </div>
-            </div>
-
-            <h1 className="display-heading mt-8 text-3xl font-semibold sm:text-4xl">
-              Sign in
-            </h1>
-            <p className="mt-3 text-sm leading-6 text-[hsl(var(--muted))]">
-              Use your administrator account to manage audio and playlists.
+        <div className="flex flex-1 items-center justify-center">
+          <div className="w-full max-w-[24rem]">
+            <h1 className="text-3xl font-semibold tracking-tight">Sign in</h1>
+            <p className="mt-2 text-sm text-ink-2">
+              Curator access to the tune library and playlists.
             </p>
 
             {isSignedInWithoutAdminAccess ? (
-              <div className="mt-8 rounded-2xl border border-[hsl(var(--danger)/0.35)] bg-[hsl(var(--danger)/0.1)] p-4 text-sm text-[hsl(var(--danger))]">
-                <p className="font-medium">This account is not an admin.</p>
-                <p className="mt-2 leading-6">
-                  Sign out, then use an administrator account to manage audio and
-                  playlists.
+              <div className="rule-t mt-8 pt-6">
+                <p className="text-sm font-medium text-danger">
+                  This account is not an admin.
                 </p>
-                <SignOutButton />
+                <p className="mt-2 text-sm text-ink-2">
+                  Sign out, then use an administrator account to manage tunes
+                  and playlists.
+                </p>
+                <div className="mt-4">
+                  <SignOutButton />
+                </div>
               </div>
             ) : (
               <div className="mt-8">
@@ -75,6 +70,13 @@ export default async function AdminLoginPage() {
             )}
           </div>
         </div>
+
+        <footer className="rule-t flex flex-wrap items-center justify-between gap-2 py-6 text-xs text-ink-3">
+          <span>© {new Date().getFullYear()} SoundShelf</span>
+          <span className="figure">
+            Played in the order the curator set it
+          </span>
+        </footer>
       </div>
     </main>
   );
