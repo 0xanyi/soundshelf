@@ -16,50 +16,53 @@
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1108.0",
-    "@aws-sdk/s3-request-presigner": "^3.1108.0",
-    "@prisma/adapter-pg": "^7.9.1",
-    "@prisma/client": "^7.9.1",
-    "@tanstack/react-query": "^5.101.4",
-    "better-auth": "^1.6.27",
+    "@aws-sdk/client-s3": "^3.1117.0",
+    "@aws-sdk/s3-request-presigner": "^3.1117.0",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "@tanstack/react-query": "^5.102.3",
+    "better-auth": "^1.7.1",
     "clsx": "^2.1.1",
-    "lucide-react": "^1.31.0",
-    "next": "^16.3.0",
+    "lucide-react": "^1.34.0",
+    "next": "^16.3.3",
     "pg": "^8.23.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "zod": "^4.3.6"
+    "zod": "^4.4.3"
   },
   "overrides": {
-    "postcss": "^8.5.26"
+    "postcss": "^8.5.26",
+    "deepmerge-ts": "^8.0.2"
   },
   "maintenanceNotes": {
-    "eslint": "Pinned to latest 9.x. eslint@10 still crashes eslint-plugin-react@7.37.5 (shipped by eslint-config-next@16.3) with `contextOrFilename.getFilename is not a function`. Re-evaluate when eslint-config-next ships a plugin bundle that supports ESLint 10's rule context API.",
-    "typescript": "Pinned to latest 6.x. typescript-eslint@8 (pulled by eslint-config-next@16.3) hard-errors on TS 7.0. Re-evaluate when typescript-eslint ships TS 7 support (typescript-eslint#10940).",
-    "@types/node": "Kept on the 25.x line to match the Node 24 runtime in Dockerfile. Do not jump to @types/node@26 unless the image moves to Node 26."
+    "eslint": "Pinned to latest 9.x. eslint-config-next@16.3.3 still bundles eslint-plugin-react@7.37.5, whose eslint peer range caps at ^9.7, so eslint@10 crashes with `contextOrFilename.getFilename is not a function`. Re-evaluate when eslint-config-next ships a plugin bundle that supports ESLint 10 rule context API.",
+    "typescript": "Pinned to latest 6.x. eslint-config-next@16.3.3 pulls typescript-eslint@8.68.0, whose typescript peer range is >=4.8.4 <6.1.0, so TS 7.x is unsupported. Re-evaluate when typescript-eslint ships TS 7 support (typescript-eslint#10940).",
+    "@types/node": "Kept on the 25.x line to match the Node 24 runtime in Dockerfile. Do not jump to @types/node@26 unless the image moves to Node 26.",
+    "prisma": "Held on 7.x. prisma@8 is only available as a prerelease (8.0.0-rc). Re-evaluate when 8.0.0 is stable."
   },
   "overridesNote": {
-    "postcss": "Forces next/vite/tailwind onto postcss >=8.5.26 (source-map path traversal). Re-evaluate when next ships postcss >=8.5.26 transitively. Must stay in lockstep with the direct devDependency `postcss` range below (autoprefixer requires postcss as a peer dep), or npm throws EOVERRIDE."
+    "postcss": "Forces next/vite/tailwind onto postcss >=8.5.26 (source-map path traversal). Re-evaluate when next ships postcss >=8.5.26 transitively. Must stay in lockstep with the direct devDependency `postcss` range below (autoprefixer requires postcss as a peer dep), or npm throws EOVERRIDE.",
+    "deepmerge-ts": "Forces @prisma/config (which pins deepmerge-ts to an exact 7.1.5) onto >=8.0.2 (GHSA-ggr8-5vv4-36mx, stack exhaustion on recursive object graphs). `npm audit fix` would instead downgrade prisma to 6.12.0 -- do not run it. Drop this override once @prisma/config pins deepmerge-ts >=8."
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^25.9.5",
-    "@types/pg": "^8.21.0",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
+    "@types/react-dom": "^19.2.5",
     "autoprefixer": "^10.5.4",
     "dotenv": "^17.4.2",
     "eslint": "^9.39.5",
-    "eslint-config-next": "^16.3.0",
-    "jsdom": "^29.1.0",
+    "eslint-config-next": "^16.3.3",
+    "jsdom": "^29.1.1",
     "playwright": "^1.62.1",
     "postcss": "^8.5.26",
-    "prisma": "^7.9.1",
+    "prisma": "^7.10.0",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.12",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }
