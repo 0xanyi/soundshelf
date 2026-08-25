@@ -109,6 +109,59 @@ describe("PlaylistBrowser", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("renders filename stems as listener titles", async () => {
+    vi.stubGlobal("fetch", (input: RequestInfo | URL) => {
+      const url = input.toString();
+
+      if (url === "/api/public/playlists") {
+        return Promise.resolve(
+          jsonResponse({
+            playlists: [
+              {
+                id: "playlist-spirit",
+                title: "Praying in the Spirit",
+                description: null,
+                itemCount: 1,
+                durationSeconds: 90,
+              },
+            ],
+          }),
+        );
+      }
+
+      if (url === "/api/public/playlists/playlist-spirit") {
+        return Promise.resolve(
+          jsonResponse({
+            id: "playlist-spirit",
+            title: "Praying in the Spirit",
+            description: null,
+            itemCount: 1,
+            durationSeconds: 90,
+            tracks: [
+              {
+                id: "track-raw",
+                playlistItemId: "item-raw",
+                title: "1hr-052601.mp3",
+                durationSeconds: 90,
+                audioUrl: "https://audio.example.test/raw.mp3",
+              },
+            ],
+          }),
+        );
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    render(<PlaylistBrowser />);
+
+    expect(
+      await screen.findByRole("heading", { name: "1hr 052601" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("1hr 052601").length).toBeGreaterThan(1);
+    expect(screen.queryByText("1hr-052601.mp3")).not.toBeInTheDocument();
+  });
+
   it("does not offer sharing when the shelf is empty", async () => {
     vi.stubGlobal("fetch", (input: RequestInfo | URL) => {
       if (input.toString() === "/api/public/playlists") {
@@ -182,12 +235,77 @@ describe("PlaylistBrowser", () => {
 
     await screen.findAllByText("Morning Track");
 
+    expect(screen.queryByText(/sharing morning/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /share playlist/i }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     const copiedUrl = new URL(writeText.mock.calls[0][0]);
     expect(copiedUrl.searchParams.get("playlist")).toBe("playlist-morning");
     expect(await screen.findByRole("button", { name: /link copied/i })).toBeInTheDocument();
+  });
+
+  it("dims unselected playlist rows while one holding is open", async () => {
+    vi.stubGlobal("fetch", (input: RequestInfo | URL) => {
+      const url = input.toString();
+
+      if (url === "/api/public/playlists") {
+        return Promise.resolve(
+          jsonResponse({
+            playlists: [
+              {
+                id: "playlist-morning",
+                title: "Morning",
+                description: null,
+                itemCount: 1,
+                durationSeconds: 90,
+              },
+              {
+                id: "playlist-evening",
+                title: "Evening",
+                description: null,
+                itemCount: 1,
+                durationSeconds: 120,
+              },
+            ],
+          }),
+        );
+      }
+
+      if (url === "/api/public/playlists/playlist-morning") {
+        return Promise.resolve(
+          jsonResponse({
+            id: "playlist-morning",
+            title: "Morning",
+            description: null,
+            itemCount: 1,
+            durationSeconds: 90,
+            tracks: [
+              {
+                id: "track-morning",
+                playlistItemId: "item-morning",
+                title: "Morning Track",
+                durationSeconds: 90,
+                audioUrl: "https://audio.example.test/morning.mp3",
+              },
+            ],
+          }),
+        );
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    render(<PlaylistBrowser />);
+
+    await screen.findAllByText("Morning Track");
+
+    const morningPlaylist = screen
+      .getAllByRole("button", { name: /morning/i })
+      .find((button) => !button.textContent?.includes("Track"));
+    const evening = screen.getByRole("button", { name: /evening/i });
+    expect(morningPlaylist?.querySelector(".text-mood-ink")).not.toBeNull();
+    expect(evening.querySelector(".text-ink-2")).not.toBeNull();
+    expect(evening).not.toHaveClass("opacity-60");
   });
 
   it("clears the previous playlist detail while a newly selected playlist loads", async () => {

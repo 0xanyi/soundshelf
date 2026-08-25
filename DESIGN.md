@@ -168,7 +168,7 @@ The surface is built from three materials only — a cool achromatic ground, a 1
 - Archivo with `wdth`: labels at 88%, shelfmarks at 82%; tabular figures on every quantity
 - 1px hairlines (`--rule` / `--rule-strong`); 2px radii on controls; fields have none
 - Fixed rem type (ratio ~1.2); no fluid headings
-- Full-width register rows; transport is a ruled foot, never a card
+- Register-width rows; transport is a ruled foot, never a card
 
 ## Colors
 
@@ -233,11 +233,11 @@ The rem scale is fixed, ratio ~1.2: `0.6875 / 0.75 / 0.8125 / 0.9375 / 1.125 / 1
 
 ## Layout
 
-The page is a register, not a grid of tiles. Full-width rows, a hairline between each, figures right-aligned on the title baseline.
+The page is a register, not a grid of tiles. Rows span the register measure, a hairline between each, figures right-aligned on the title baseline.
 
-**Page measure.** Public, Studio, and login share one column: `.page` is `max-width: 87.5rem` (1400px), padded `1rem / 1.5rem / 2rem`. The wordmark sits on the same left edge on every surface.
+**Page measure.** Public, Studio, and login share one column: `.page` is `max-width: 87.5rem` (1400px), padded `1rem / 1.5rem / 2rem`. The wordmark sits on the same left edge on every surface. The listener holdings column is `.register` at `--register-max` (64rem), left-aligned in `.page`, so two Playlists do not stretch count and time to the far margin.
 
-**Listener.** Masthead is wordmark (links to `/`) + holdings count top-left, theme control top-right (`py-7 / lg:py-10`). `/` is the shelf. `/?playlist=<id>` is that Playlist alone: identity and running order, no other holdings. Share copies that URL and is omitted when nothing can be shared. Playlist columns at `sm+`: `7.5rem` shelfmark | fluid title | `5rem` count | `6.5rem` running time. An open Playlist indents its track register by the shelfmark column (`sm:pl-[7.5rem]`). Track columns: `2rem` Position | fluid title | `4.5rem` starts | `4.5rem` length. Transport is `position: fixed; bottom: 0; z-index: 30` on `bg`, with a 2px scrub rule as its top edge; interior grid is `1fr auto` until `lg`, then `minmax(0,1fr) auto minmax(0,1fr)`, and uses `.page` so it lines up with the register. The page is a `min-h-screen` column; the footer takes `mt-auto` so a short register still closes at the viewport floor. `pb-32` clears the transport only while that bar is mounted.
+**Listener.** Masthead is wordmark (links to `/`) + holdings figure (`text-sm` `ink-2`) top-left, theme control top-right (`py-7 / lg:py-10`). `/` is the shelf. `/?playlist=<id>` is that Playlist alone: identity and running order, no other holdings. Share copies that URL, sits under the open holding's track register, and is omitted when nothing can be shared. Playlist columns at `sm+`: `7.5rem` shelfmark | fluid title | `5rem` count | `6.5rem` running time. An open Playlist indents its track register by the shelfmark column (`sm:pl-[7.5rem]`). Track columns: `2rem` Position | fluid title | `4.5rem` starts | `4.5rem` length. Transport is `position: fixed; bottom: 0; z-index: 30` on `bg`, with a 2px scrub rule as its top edge; interior grid is `1fr auto` until `lg`, then `minmax(0,1fr) auto minmax(0,1fr)`, and uses `.page` so it lines up with the wordmark. The page is a `min-h-screen` column. The footer is a ruled closer on the register — it sits under the last holding, not `mt-auto` on the viewport floor, so a short shelf does not leave a floating bar above the transport. `pb-32` on the page column clears the transport only while that bar is mounted.
 
 **Studio.** The same `.page` column; at `lg` it becomes `15rem` sidebar | fluid main, sticky, divided by a vertical `--rule` (not a filled rail). No second max-width inside the main. Page headers sit title and a figure count on one baseline (`gap-x-6`). Forms are `gap-x-6 gap-y-3` with the solid control on the last column, baseline-aligned to the field. Login uses the same `.page`, masthead, and footer; the form is a centered `24rem` column so fields keep a readable measure.
 
@@ -307,17 +307,17 @@ None. Do not add them. Empty states, notices, and forms live on the ground betwe
 
 ### Navigation
 
-- **Listener masthead:** wordmark (`title` size, 600) + BrandIcon in `mood` (18px) + holdings figure. No tagline, no eyebrow.
+- **Listener masthead:** wordmark (`title` size, 600) + BrandIcon in `mood` (18px) + holdings figure (`text-sm` `ink-2`). No tagline, no eyebrow.
 - **Studio sidebar:** wordmark at `0.8125rem` 600 with a "STUDIO" label. Active item is `ink` / 500 with a shelf tab; inactive is `ink-2` with a 3px spacer. Hover to `ink`. No filled pill.
 - **Theme control:** 32px icon button cycling system → light → dark. Announces the current setting.
 
 ### Shelfmark (signature)
 
-The identity device. A 3px × 0.75em `mood` tab, then `SS·XXX` in narrow tabular `mood-ink`. Always on the title's baseline, never a badge, never a row border. Unset ids render `SS·———`. Same construction in the listener register, the transport, and the Studio tables.
+The identity device. A 3px × 0.75em `mood` tab, then `SS·XXX` in narrow tabular `mood-ink`. An open holding stretches the tab to 1em. Always on the title's baseline, never a badge, never a row border. Unset ids render `SS·———`. Same construction in the listener register, the transport, and the Studio tables.
 
 ### Register row (signature)
 
-A full-width grid, `text-align: left`, hover `bg-raised` in 140ms. Selected Playlist title goes 600; unselected stays 500. Current track title is 500 `ink`; others `ink-2`. Current Position is `mood-ink`. Figures right-align. No chevron, no thumbnail, no card chrome.
+A register-width grid, `text-align: left`, hover `bg-raised` in 140ms. The open Playlist row holds `bg-raised`; its title goes 600 `mood-ink`; unselected stays 500 and recedes to `ink-2` / `ink-3` while another holding is open (hover restores `ink` / `ink-2`). Current track title is 500 `ink`; others `ink-2`. Current Position is `mood-ink`. Figures right-align. No chevron, no thumbnail, no card chrome.
 
 ### Transport (signature)
 

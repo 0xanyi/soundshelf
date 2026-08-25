@@ -56,6 +56,8 @@
 
   /* Shared by public, Studio, and login. 1400px. */
   --page-max: 87.5rem;
+  /* Holdings column inside .page. Keeps figure columns on the title. */
+  --register-max: 64rem;
 
   --bg: 240 20% 99%;
   --bg-raised: 240 14% 96.5%;
@@ -206,6 +208,14 @@
     }
   }
 
+  /* The shelf itself. Left-aligned in .page so the wordmark and the first
+     shelfmark share an edge; narrower than the page so two holdings do not
+     stretch count and time to the far margin. */
+  .register {
+    width: 100%;
+    max-width: var(--register-max);
+  }
+
   /* Register figures. Every quantity in the product is set in these: fixed
      width so columns align down the page and a changing value never shifts
      its neighbours. */
@@ -247,6 +257,10 @@
     height: 0.75em;
     border-radius: 0.5px;
     background: hsl(var(--mood-h) var(--mood-s-mark) var(--mood-l-mark));
+  }
+
+  .shelf-tab-open {
+    height: 1em;
   }
 
   .rule-t {

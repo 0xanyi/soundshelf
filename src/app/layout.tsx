@@ -38,7 +38,7 @@ const directionContract = `
 THESIS: A Playlist is a catalogued holding. Refuses the cover-art grid and the floating player card this category always ships: SoundShelf stores no artwork, so identity is a shelfmark, a hue tab and exact figures.
 OWN-WORLD: Achromatic ground, 1px hairlines, Archivo at two widths, tabular figures on every quantity. No cards, panels, boxes or meaningful shadows; 2px radii. One deterministic hue per Playlist with text-safe and fill variants per theme. Light and dark, both first-class.
 STORY: A listener reads an ordered register, sees what each Playlist holds and how long it runs, and plays it in the curator's order.
-FIRST VIEWPORT: Wordmark and holdings count top-left; full-width Playlist rows beneath, shelfmark and tab leading, title large, item count and running time right-aligned on the same baseline, hairline between each. Fixed transport register at the foot.
+FIRST VIEWPORT: Wordmark and holdings figure top-left; Playlist rows beneath on the register measure, shelfmark and tab leading, open title in mood-ink, item count and running time right-aligned on the same baseline, hairline between each. Fixed transport register at the foot.
 FORM: Shelfmark; candidate 4 of the grounded list; seed key b41e20a2.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
 `;

@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { tuneTitleFromFileName } from "@/lib/format";
 import {
   enforceSameOrigin,
   jsonError,
@@ -94,7 +95,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const tune = await db.tune.create({
       data: {
-        title: getInitialTitle(uploadedFile.name),
+        title: tuneTitleFromFileName(uploadedFile.name),
         durationSeconds,
         mimeType: uploadedFile.type,
         fileSizeBytes: BigInt(uploadedFile.size),
@@ -221,12 +222,6 @@ function getValidationStatus(
   }
 
   return 400;
-}
-
-function getInitialTitle(fileName: string): string {
-  const withoutExtension = fileName.replace(/\.[^/.]+$/, "").trim();
-
-  return withoutExtension || "Untitled tune";
 }
 
 // Cap a track at 24 hours so a malformed value can never poison the schema.
